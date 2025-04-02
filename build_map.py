@@ -14,6 +14,7 @@ from copy import copy, deepcopy
 from gdpc.geometry import placeBox
 
 from get_build_map import MapHolder
+
 ED = Editor(buffering=True)
 
 BUILD_AREA = ED.getBuildArea()  # BUILDAREA
@@ -30,19 +31,18 @@ WORLDSLICE = ED.loadWorldSlice(BUILD_AREA.toRect(), cache=True)  # this takes a 
 heights = WORLDSLICE.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
 
 
-
 def claim_zone(xstart, zstart, sizex, sizez, door):
     edges = 9
     for x in range(xstart - STARTX - edges, xstart + sizex - STARTX + edges):
         for z in range(zstart - STARTZ - edges, zstart + sizez - STARTZ + edges):
             try:
-                if building_places[x,z] == 0:
+                if building_places[x, z] == 0:
                     building_places[x, z] = 10_000
             except:
                 pass
 
-    for x in range(xstart - STARTX-1, xstart + sizex - STARTX+2):
-        for z in range(zstart - STARTZ-1, zstart + sizez - STARTZ+2):
+    for x in range(xstart - STARTX - 1, xstart + sizex - STARTX + 2):
+        for z in range(zstart - STARTZ - 1, zstart + sizez - STARTZ + 2):
             try:
                 building_places[x, z] = 20_000
             except:
@@ -292,21 +292,21 @@ def build_deco(sizex, sizez, ylevel):
     if deco_choice == 0:
         for x in range(2, sizex - 1):
             for z in range(2, sizez - 1):
-                ED.placeBlock((x, ylevel-1, z), Block("deepslate_bricks"))
+                ED.placeBlock((x, ylevel - 1, z), Block("deepslate_bricks"))
         ED.placeBlock((2, ylevel, 2), Block("cauldron"))
-        ED.placeBlock((2, ylevel, 3), Block("furnace",{"facing":"east"}))
-        ED.placeBlock((2, ylevel, 4), Block("furnace",{"facing":"east"}))
-        ED.placeBlock((2, ylevel+1, 4), Block("lantern"))
-        ED.placeBlock((2, ylevel+1, 5), Block("grindstone",{"face":"floor"}))
+        ED.placeBlock((2, ylevel, 3), Block("furnace", {"facing": "east"}))
+        ED.placeBlock((2, ylevel, 4), Block("furnace", {"facing": "east"}))
+        ED.placeBlock((2, ylevel + 1, 4), Block("lantern"))
+        ED.placeBlock((2, ylevel + 1, 5), Block("grindstone", {"face": "floor"}))
         ED.placeBlock((2, ylevel, 5), Block("furnace", {"facing": "north"}))
-        ED.placeBlock((3, ylevel, 5), Block("furnace",{"facing":"north"}))
-        ED.placeBlock((4, ylevel, 5), Block("furnace",{"facing":"north"}))
+        ED.placeBlock((3, ylevel, 5), Block("furnace", {"facing": "north"}))
+        ED.placeBlock((4, ylevel, 5), Block("furnace", {"facing": "north"}))
         ED.placeBlock((5, ylevel, 5), Block("anvil"))
-        ED.placeBlock((4, ylevel-1, 3), Block("soul_sand"))
+        ED.placeBlock((4, ylevel - 1, 3), Block("soul_sand"))
         ED.placeBlock((4, ylevel, 3), Block("fire"))
         for x in range(3, sizex - 1):
             for z in range(2, sizez - 2):
-                ED.placeBlock((x, ylevel+3, z), Block("deepslate_bricks"))
+                ED.placeBlock((x, ylevel + 3, z), Block("deepslate_bricks"))
                 ED.placeBlock((x, ylevel + 2, z), Block("iron_bars"))
         ED.placeBlock((4, ylevel + 3, 3), Block("tinted_glass"))
         ED.placeBlock((4, ylevel + 2, 3), Block("air"))
@@ -317,20 +317,22 @@ def build_deco(sizex, sizez, ylevel):
                 chest1 = Block("barrel", {"facing": direction},
                                data='{Items: [{Slot: 0b, id: "bread", Count: 10b}]}')
 
-                block = random.choice([chest1, chest1, Block("hay_block"), Block("hay_block"), Block("hay_block"), Block("air"),
-                                       Block("cobweb")])
+                block = random.choice(
+                    [chest1, chest1, Block("hay_block"), Block("hay_block"), Block("hay_block"), Block("air"),
+                     Block("cobweb")])
                 ED.placeBlock((x, ylevel, z), block)
         ED.placeBlock((2, ylevel, sizex - 2), Block("hay_block"))
-        ED.placeBlock((2, ylevel+1, sizex - 2), Block("lantern"))
+        ED.placeBlock((2, ylevel + 1, sizex - 2), Block("lantern"))
         for x in range(3, sizex - 2):
             for z in range(3, sizez - 2):
                 direction = random.choice(["down", "east", "north", "south", "up", "west"])
                 chest1 = Block("barrel", {"facing": direction},
                                data='{Items: [{Slot: 0b, id: "wheat", Count: 30b}]}')
 
-                block = random.choice([chest1,chest1, Block("hay_block"), Block("hay_block"), Block("hay_block"), Block("air"),
-                                       Block("cobweb")])
-                ED.placeBlock((x, ylevel+1, z), block)
+                block = random.choice(
+                    [chest1, chest1, Block("hay_block"), Block("hay_block"), Block("hay_block"), Block("air"),
+                     Block("cobweb")])
+                ED.placeBlock((x, ylevel + 1, z), block)
 
         ED.placeBlock((4, ylevel + 2, 4), Block("hay_block"))
 
@@ -428,58 +430,58 @@ def build_deco(sizex, sizez, ylevel):
         if ylevel != 0:
             for x in range(1, sizex):
                 for z in range(1, sizez):
-                    for y in range(ylevel,ylevel+5):
+                    for y in range(ylevel, ylevel + 5):
                         ED.placeBlock((x, y, z), Block("dark_prismarine"))
-            for x in range(1, sizex-1):
-                for z in range(1, sizez-1):
-                    for y in range(ylevel,ylevel+5):
+            for x in range(1, sizex - 1):
+                for z in range(1, sizez - 1):
+                    for y in range(ylevel, ylevel + 5):
                         ED.placeBlock((x, y, z), Block("air"))
 
             for x in range(2, sizex):
-                ED.placeBlock((x, ylevel+2, sizez-1), Block("redstone_block"))
+                ED.placeBlock((x, ylevel + 2, sizez - 1), Block("redstone_block"))
 
             for z in range(2, sizez):
-                ED.placeBlock((sizex-1, ylevel+2, z), Block("redstone_block"))
+                ED.placeBlock((sizex - 1, ylevel + 2, z), Block("redstone_block"))
 
-            for x in range(2, sizex-1):
-                ED.placeBlock((x, ylevel+2, sizez-2), Block("redstone_lamp"))
+            for x in range(2, sizex - 1):
+                ED.placeBlock((x, ylevel + 2, sizez - 2), Block("redstone_lamp"))
 
-            for z in range(2, sizez-1):
-                ED.placeBlock((sizex-2, ylevel+2, z), Block("redstone_lamp"))
+            for z in range(2, sizez - 1):
+                ED.placeBlock((sizex - 2, ylevel + 2, z), Block("redstone_lamp"))
 
-            for x in range(2, sizex-1):
-                rand_int = randint(0,4)
-                if rand_int == 0 :
-                    ED.placeBlock((x, ylevel, sizez-2), Block("crafting_table"))
-                if rand_int == 1 :
-                    ED.placeBlock((x, ylevel, sizez-2), Block("furnace"))
-                    if randint(0,1) == 1:
-                        ED.placeBlock((x, ylevel+1, sizez - 2), Block("furnace"))
+            for x in range(2, sizex - 1):
+                rand_int = randint(0, 4)
+                if rand_int == 0:
+                    ED.placeBlock((x, ylevel, sizez - 2), Block("crafting_table"))
+                if rand_int == 1:
+                    ED.placeBlock((x, ylevel, sizez - 2), Block("furnace"))
+                    if randint(0, 1) == 1:
+                        ED.placeBlock((x, ylevel + 1, sizez - 2), Block("furnace"))
                 if rand_int == 2:
-                    ED.placeBlock((x, ylevel, sizez-2), Block("cauldron"))
-                    ED.placeBlock((x, ylevel+1, sizez-2), Block("lightning_rod",{"facing":"south"}))
+                    ED.placeBlock((x, ylevel, sizez - 2), Block("cauldron"))
+                    ED.placeBlock((x, ylevel + 1, sizez - 2), Block("lightning_rod", {"facing": "south"}))
                 if rand_int == 3:
-                    ED.placeBlock((x, ylevel, sizez-2), Block("scaffolding"))
-                    ED.placeBlock((x, ylevel+1, sizez - 2), Block("heavy_weighted_pressure_plate"))
-                if rand_int ==4:
-                    ED.placeBlock((x, ylevel, sizez-2), Block("smoker"))
-            for z in range(3, sizez-1):
-                rand_int = randint(0,4)
-                if rand_int == 0 :
-                    ED.placeBlock((sizex-2, ylevel, z), Block("crafting_table"))
-                    ED.placeBlock((sizex - 2, ylevel+1, z), Block("cake"))
-                if rand_int == 1 :
-                    ED.placeBlock((sizex-2, ylevel, z), Block("furnace",{"facing":"west"}))
-                    if randint(0,1) == 1:
-                        ED.placeBlock((sizex-2, ylevel+1, z), Block("furnace",{"facing":"west"}))
+                    ED.placeBlock((x, ylevel, sizez - 2), Block("scaffolding"))
+                    ED.placeBlock((x, ylevel + 1, sizez - 2), Block("heavy_weighted_pressure_plate"))
+                if rand_int == 4:
+                    ED.placeBlock((x, ylevel, sizez - 2), Block("smoker"))
+            for z in range(3, sizez - 1):
+                rand_int = randint(0, 4)
+                if rand_int == 0:
+                    ED.placeBlock((sizex - 2, ylevel, z), Block("crafting_table"))
+                    ED.placeBlock((sizex - 2, ylevel + 1, z), Block("cake"))
+                if rand_int == 1:
+                    ED.placeBlock((sizex - 2, ylevel, z), Block("furnace", {"facing": "west"}))
+                    if randint(0, 1) == 1:
+                        ED.placeBlock((sizex - 2, ylevel + 1, z), Block("furnace", {"facing": "west"}))
                 if rand_int == 2:
-                    ED.placeBlock((sizex-2, ylevel, z), Block("cauldron"))
-                    ED.placeBlock((sizex-2, ylevel+1, z), Block("lightning_rod",{"facing":"east"}))
+                    ED.placeBlock((sizex - 2, ylevel, z), Block("cauldron"))
+                    ED.placeBlock((sizex - 2, ylevel + 1, z), Block("lightning_rod", {"facing": "east"}))
                 if rand_int == 3:
-                    ED.placeBlock((sizex-2, ylevel, z), Block("scaffolding"))
-                    ED.placeBlock((sizex-2, ylevel+1, z), Block("heavy_weighted_pressure_plate"))
-                if rand_int ==4:
-                    ED.placeBlock((sizex-2, ylevel, z), Block("smoker"))
+                    ED.placeBlock((sizex - 2, ylevel, z), Block("scaffolding"))
+                    ED.placeBlock((sizex - 2, ylevel + 1, z), Block("heavy_weighted_pressure_plate"))
+                if rand_int == 4:
+                    ED.placeBlock((sizex - 2, ylevel, z), Block("smoker"))
 
         else:
             with ED.pushTransform(Transform((1, 0, 0))):
@@ -499,8 +501,9 @@ def build_deco(sizex, sizez, ylevel):
                 ED.placeBlock((4, ylevel, 4), Block("quartz_stairs", {"facing": "east"}))
 
                 ED.placeBlock((2, ylevel, 5), Block("lightning_rod"))
-                ED.placeBlock((2, ylevel+1, 5), Block("redstone_lamp"))
-                ED.placeBlock((2, ylevel+2, 5), Block("sculk_sensor"))
+                ED.placeBlock((2, ylevel + 1, 5), Block("redstone_lamp"))
+                ED.placeBlock((2, ylevel + 2, 5), Block("sculk_sensor"))
+
 
 def build_deco_roof(sizex, sizez, ylevel):
     chest1 = Block("chest", {"facing": "south", "type": "left"},
@@ -550,28 +553,29 @@ def make_door_claim(sizex, sizez, direction_door, xstart, ystart, zstart):
         ED.placeBlock((sizex, 1, 3), Block("air"))
         ED.placeBlock((sizex + 1, 0, 3), Block("air"))
         ED.placeBlock((sizex + 1, 1, 3), Block("air"))
-        building_places[xstart - STARTX+sizex+1, zstart - STARTZ+3] = 5_000
+        building_places[xstart - STARTX + sizex + 1, zstart - STARTZ + 3] = 5_000
 
     if direction_door == "south":
         ED.placeBlock((0, 0, 3), Block("air"))
         ED.placeBlock((0, 1, 3), Block("air"))
         ED.placeBlock((-1, 0, 3), Block("air"))
         ED.placeBlock((-1, 1, 3), Block("air"))
-        building_places[xstart - STARTX-1, zstart - STARTZ+3] = 5_000
+        building_places[xstart - STARTX - 1, zstart - STARTZ + 3] = 5_000
 
     if direction_door == "east":
         ED.placeBlock((4, 0, sizez), Block("air"))
         ED.placeBlock((4, 1, sizez), Block("air"))
         ED.placeBlock((4, 0, sizez + 1), Block("air"))
         ED.placeBlock((4, 1, sizez + 1), Block("air"))
-        building_places[xstart - STARTX+4, zstart - STARTZ+sizez+1] = 5_000
+        building_places[xstart - STARTX + 4, zstart - STARTZ + sizez + 1] = 5_000
 
     if direction_door == "west":
         ED.placeBlock((4, 0, 0), Block("air"))
         ED.placeBlock((4, 1, 0), Block("air"))
         ED.placeBlock((4, 0, -1), Block("air"))
         ED.placeBlock((4, 1, -1), Block("air"))
-        building_places[xstart - STARTX+4, zstart - STARTZ-1] = 5_000
+        building_places[xstart - STARTX + 4, zstart - STARTZ - 1] = 5_000
+
 
 def make_door(sizex, sizez, direction_door):
     if direction_door == "north":
@@ -637,7 +641,7 @@ def build_structure(xstart, ystart, zstart, sizex, sizey, sizez, direction_door,
     with ED.pushTransform(Transform((xstart, ystart, zstart))):
         # main building with door
         build_deco_railing(sizex, sizey, sizez, ylevel, height, wood_type)
-        make_door_claim(sizex, sizez, direction_door,xstart, ystart, zstart)
+        make_door_claim(sizex, sizez, direction_door, xstart, ystart, zstart)
 
     # side buildings
     for extra_building_dir in direction_extra_houses:
@@ -803,8 +807,8 @@ def build_boxes(block_slope_score, it):
         return
     best_loc_y = heights[(best_loc_x, best_loc_z)]
 
-
-    while build_map.is_tree(STARTX + best_loc_x, best_loc_y, STARTZ + best_loc_z) or build_map.is_air(STARTX + best_loc_x, best_loc_y,                                                              STARTZ + best_loc_z):
+    while build_map.is_tree(STARTX + best_loc_x, best_loc_y, STARTZ + best_loc_z) or build_map.is_air(
+        STARTX + best_loc_x, best_loc_y, STARTZ + best_loc_z):
         best_loc_y -= 1
 
     direction_door = where_door(best_loc_x, best_loc_z)
@@ -813,6 +817,8 @@ def build_boxes(block_slope_score, it):
     direction_extra_house = free_area_for_extra(best_loc_x, best_loc_y, best_loc_z, direction_door, block_slope_score)
     build_structure(STARTX + best_loc_x, best_loc_y, STARTZ + best_loc_z, structx, structy, structz, direction_door,
                     direction_extra_house)
+
+
 class Node():
     """A node class for A* Pathfinding"""
 
@@ -827,7 +833,8 @@ class Node():
     def __eq__(self, other):
         return self.position == other.position
 
-#code not writen by me, but adjusted by me.
+
+# code not writen by me, but adjusted by me.
 def astar(maze, start, end):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
@@ -868,17 +875,18 @@ def astar(maze, start, end):
             while current is not None:
                 path.append(current.position)
                 current = current.parent
-            return path[::-1] # Return reversed path
+            return path[::-1]  # Return reversed path
 
         # Generate children
         children = []
-        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]: # Adjacent squares
+        for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # Adjacent squares
 
             # Get node position
             node_position = (current_node.position[0] + new_position[0], current_node.position[1] + new_position[1])
 
             # Make sure within range
-            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (len(maze[len(maze)-1]) -1) or node_position[1] < 0:
+            if node_position[0] > (len(maze) - 1) or node_position[0] < 0 or node_position[1] > (
+                len(maze[len(maze) - 1]) - 1) or node_position[1] < 0:
                 continue
 
             # Make sure walkable terrain
@@ -901,7 +909,8 @@ def astar(maze, start, end):
 
             # Create the f, g, and h values
             child.g = current_node.g + 1
-            child.h = ((child.position[0] - end_node.position[0]) ** 2) + ((child.position[1] - end_node.position[1]) ** 2)
+            child.h = ((child.position[0] - end_node.position[0]) ** 2) + (
+                    (child.position[1] - end_node.position[1]) ** 2)
             child.f = child.g + child.h
 
             # Child is already in the open list
@@ -911,7 +920,6 @@ def astar(maze, start, end):
 
             # Add the child to the open list
             open_list.append(child)
-
 
 
 def build_paths():
@@ -935,18 +943,16 @@ def build_paths():
         if path is not None:
             for p in path:
                 x, z = p
-                if build_map.is_water(x+STARTX, heights[(x,z)],z+STARTZ):
+                if build_map.is_water(x + STARTX, heights[(x, z)], z + STARTZ):
                     ED.placeBlock((x + STARTX, heights[(x, z)], z + STARTZ), Block("oak_slab"))
                 else:
-                    ED.placeBlock((x+STARTX, heights[(x,z)]-1,z+STARTZ), Block("dirt_path"))
-
-
+                    ED.placeBlock((x + STARTX, heights[(x, z)] - 1, z + STARTZ), Block("dirt_path"))
 
 
 print("calculating heights...")
 
 build_map = MapHolder(ED, heights, 1.3)
-build_map.find_flat_areas_and_trees(print_colors=True)
+build_map.find_flat_areas_and_trees(print_colors=False)
 
 for it in range(20):
     build_boxes(build_map.block_slope_score, it)
@@ -957,4 +963,3 @@ WORLDSLICE = ED.loadWorldSlice(BUILD_AREA.toRect(), cache=True)  # this takes a 
 heights = WORLDSLICE.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
 print("building paths...")
 build_paths()
-

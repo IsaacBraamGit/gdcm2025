@@ -2,7 +2,7 @@ import nbtlib
 import pandas as pd
 
 # Load schematic
-schem_path = "barn.schem"
+schem_path = "raw/barn.schem"
 nbt = nbtlib.load(schem_path)
 schem = nbt["Schematic"]
 
