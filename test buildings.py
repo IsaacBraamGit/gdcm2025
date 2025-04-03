@@ -5,19 +5,6 @@ ED = Editor(buffering=True)
 
 import csv
 
-ALLOWED_KEYS = {"facing", "half", "shape", "type", "open"}
-VALUE_REMAP = {
-    "facing": {
-        "north": "north",
-        "south": "south",
-        "east": "east",
-        "west": "south",
-    },
-    "half": {
-        "top": "bottom",
-        "bottom": "bottom"
-    }
-}
 
 def parse_props(block_str):
     if "[" in block_str:
@@ -27,11 +14,10 @@ def parse_props(block_str):
         for pair in raw_props.rstrip("]").split(","):
             key, val = pair.split("=")
             key, val = key.strip(), val.strip()
-            if key in ALLOWED_KEYS:
-                val = VALUE_REMAP.get(key, {}).get(val, val)
-                props[key] = val
-            else:
-                print(f"[WARN] Ignored unhandled property: {key}={val}")
+
+
+            props[key] = val
+
         return name, props
     return block_str.replace("minecraft:", "").strip(), {}
 
@@ -48,7 +34,7 @@ def placeFromFile(filename):
     print("Done.")
 
 def placeTent():
-    placeFromFile("tent.csv")
+    placeFromFile("builds/processed/barn.csv")
 buildArea = ED.getBuildArea()
 with ED.pushTransform(buildArea.offset):
     print("Placing tent in the world...")
