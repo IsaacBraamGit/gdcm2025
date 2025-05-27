@@ -1,3 +1,4 @@
+#  /setbuildarea ~0 ~0 ~0 ~200 ~100 ~200
 from gdpc import Editor, Block, Transform, geometry
 
 import find_buildings
@@ -92,31 +93,83 @@ def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, he
 
 
 
+from collections import Counter
+
 def place_build(building):
     print(f"Placing {building['name']} in the world...")
-    print(building)
 
+    orig_height, orig_width = building["size"]
+    orientation = building["orientation"]
+
+    if orientation % 2 == 0:
+        height, width = orig_height, orig_width
+    else:
+        height, width = orig_width, orig_height
+    # for correct in-place rotation
     x_offset = building["top_left"][0]
     z_offset = building["top_left"][1]
-    y_offset = heights[(x_offset, z_offset)]
-
+    y_offset = heights[(x_offset+int(height/2), z_offset+int(width/2))] - 1
     orientation = building["orientation"]
-    height, width = building["size"]  # for correct in-place rotation
 
+    # === Step 1: Analyze the current ground blocks under the building ===
+    block_counter = Counter()
+    for dx in range(height):
+        for dz in range(width):
+            world_x = x_offset + dx
+            world_z = z_offset + dz
+            ground_y = heights[(world_x, world_z)] - 1
+            block = WORLDSLICE.getBlock((world_x, ground_y, world_z))
+            if block is not None:
+                block_counter[block.id] += 1
+
+    if not block_counter:
+        most_common_block = "grass_block"
+    else:
+        most_common_block = block_counter.most_common(1)[0][0]
+
+    # === Step 2: Clear the space ===
+    for dx in range(height):
+        for dz in range(width):
+            for dy in range(30):  # remove up to 30 blocks tall
+                ED.placeBlock((x_offset + dx, y_offset + dy, z_offset + dz), Block("air"))
+
+    # === Step 3: Place platform ===
+    for dx in range(height):
+        for dz in range(width):
+            ED.placeBlock((x_offset + dx, y_offset, z_offset + dz), Block(most_common_block))
+
+    # === Step 4: Place the building on top ===
     placeFromFile(
         f"builds/processed/{building['name']}.csv",
-        x_offset, y_offset, z_offset,
+        x_offset, y_offset + 1, z_offset,  # note the +1
         orientation,
         width, height
     )
 
 
+
 from find_buildings import *
 from get_build_map import MapHolder
-
+# 🏠 fhouse1: Max X (width) = 30, Max Y (height) = 16, Max Z (depth) = 17
+# 🏠 fhouse2: Max X (width) = 13, Max Y (height) = 17, Max Z (depth) = 17
+# 🏠 fhouse3: Max X (width) = 13, Max Y (height) = 12, Max Z (depth) = 14
+# 🏠 fhouse4: Max X (width) = 10, Max Y (height) = 23, Max Z (depth) = 18
+# 🏠 fhouse5: Max X (width) = 18, Max Y (height) = 26, Max Z (depth) = 11
+# 🏠 fhouse6: Max X (width) = 22, Max Y (height) = 10, Max Z (depth) = 16
+# 🏠 fhouse7: Max X (width) = 10, Max Y (height) = 15, Max Z (depth) = 10
+# 🏠 fhouse8: Max X (width) = 10, Max Y (height) = 8, Max Z (depth) = 8
+# todo: door_pos
 BUILDING_TYPES = [
-    {"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
-    {"name": "tent", "size": (4, 5), "max": 10, "border": 3, "door_pos": (1, 0, 0)},
+    #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
+    #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
+    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 3, 'door_pos': (15, 0, 0)},
+    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
+    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
+    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
+    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 2, 'door_pos': (9, 0, 0)},
+    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 3, 'door_pos': (11, 0, 0)},
+    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
+    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 1, 'door_pos': (5, 0, 0)},
 ]
 
 buildArea = ED.getBuildArea()

@@ -45,7 +45,7 @@ def get_avg_slope_map(slope_map, placement_map, h, w, border):
     sum_slope = convolve(slope_valid, kernel, mode='constant', cval=0.0)
     count_valid = convolve(valid_mask, kernel, mode='constant', cval=0.0)
 
-    avg_slope = sum_slope / count_valid + 0.00000001
+    avg_slope = sum_slope / count_valid + 0.001
     avg_slope[count_valid < h * w] = np.inf
 
     # Step 2: Invalidate placements where the full (building + border) region is not clear
