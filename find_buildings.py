@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.ndimage import convolve
 import random
+
+
 SLOPE_THRESHOLD = 1  # Maximum average slope allowed
 CLAIM_SCORE = 10     # Value used to fill in claimed building spots
 BLOCKED_SCORE = 5    # Value used to mark border zones
@@ -156,9 +158,17 @@ def get_placements(slope_map, building_types):
 
 if __name__ == "__main__":
     BUILDING_TYPES = [
-        {"name": "barn", "size": (8, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
-        {"name": "tent", "size": (4, 5), "max": 10, "border": 3, "door_pos": (1, 0, 0)},
-    ]
+    #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
+    #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
+    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 3, 'door_pos': (15, 0, 0)},
+    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
+    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
+    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
+    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 2, 'door_pos': (9, 0, 0)},
+    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 3, 'door_pos': (11, 0, 0)},
+    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
+    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 1, 'door_pos': (5, 0, 0)},
+]
 
     with open("slope.txt", "r") as f:
         data = [list(map(float, line.strip().split())) for line in f]

@@ -125,7 +125,7 @@ with editor.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
     build_image_on_dome(
         image_path="gpt2.png",
         resize_to=(200, 200),
-        build_height=-50,
+        build_height=50,
         radius=120,
         thickness=5,
         line_thickness=5,

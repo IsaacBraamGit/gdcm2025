@@ -43,20 +43,13 @@ def rotate_props(name, props, orientation):
     return props
 
 
-
-
-
-
-
-
-
 def rotate_coords(x, z, orientation, width, height):
     if orientation == 0:
         return x, z
     elif orientation == 1:  # 90 degrees
         return z, width - 1 - x
     elif orientation == 2:  # 180 degrees
-        return width - 1 - x, height - 1 - z
+        return height - 1 - x, width - 1 - z
     elif orientation == 3:  # 270 degrees
         return height - 1 - z, x
     else:
@@ -98,53 +91,196 @@ from collections import Counter
 def place_build(building):
     print(f"Placing {building['name']} in the world...")
 
+    import numpy as np
+    from scipy.ndimage import gaussian_filter
+    from collections import Counter
+
     orig_height, orig_width = building["size"]
     orientation = building["orientation"]
 
-    if orientation % 2 == 0:
-        height, width = orig_height, orig_width
-    else:
-        height, width = orig_width, orig_height
-    # for correct in-place rotation
+    # Compute rotated bounding box in world coordinates
+    rotated_coords = [rotate_coords(x, z, orientation, orig_width, orig_height)
+                      for x in range(orig_height)
+                      for z in range(orig_width)]
+    rotated_x = [x for x, _ in rotated_coords]
+    rotated_z = [z for _, z in rotated_coords]
+    min_dx, max_dx = min(rotated_x), max(rotated_x)
+    min_dz, max_dz = min(rotated_z), max(rotated_z)
+
     x_offset = building["top_left"][0]
     z_offset = building["top_left"][1]
-    y_offset = heights[(x_offset+int(height/2), z_offset+int(width/2))] - 1
-    orientation = building["orientation"]
 
-    # === Step 1: Analyze the current ground blocks under the building ===
+    # Average terrain height under the footprint
+    avg_height = sum(
+        heights[(x_offset + dx, z_offset + dz)]
+        for dx in range(min_dx, max_dx + 1)
+        for dz in range(min_dz, max_dz + 1)
+    ) // ((max_dx - min_dx + 1) * (max_dz - min_dz + 1))
+
+    y_offset = avg_height - 2
+    platform_y = y_offset + 1  # Height at which platform will be placed
+
+    # Determine most common ground block
     block_counter = Counter()
-    for dx in range(height):
-        for dz in range(width):
+    for dx in range(min_dx, max_dx + 1):
+        for dz in range(min_dz, max_dz + 1):
             world_x = x_offset + dx
             world_z = z_offset + dz
             ground_y = heights[(world_x, world_z)] - 1
             block = WORLDSLICE.getBlock((world_x, ground_y, world_z))
-            if block is not None:
+            if block:
                 block_counter[block.id] += 1
 
-    if not block_counter:
+    most_common_block = block_counter.most_common(1)[0][0] if block_counter else "grass_block"
+    most_common_block_under = most_common_block
+    if most_common_block == "dirt":
         most_common_block = "grass_block"
-    else:
-        most_common_block = block_counter.most_common(1)[0][0]
+        most_common_block_under = "dirt"
 
-    # === Step 2: Clear the space ===
-    for dx in range(height):
-        for dz in range(width):
-            for dy in range(30):  # remove up to 30 blocks tall
-                ED.placeBlock((x_offset + dx, y_offset + dy, z_offset + dz), Block("air"))
+    # Clear and place foundation
+    for dx in range(orig_height):
+        for dz in range(orig_width):
+            world_x = x_offset + dx
+            world_z = z_offset + dz
+            # Clear above
+            for dy in range(15):
+                ED.placeBlock((world_x, y_offset + 1 + dy, world_z), Block("air"))
+            # Place foundation
+            for down in range(0, -4, -1):
+                ED.placeBlock((world_x, y_offset + 1 + down, world_z), Block(most_common_block))
 
-    # === Step 3: Place platform ===
-    for dx in range(height):
-        for dz in range(width):
-            ED.placeBlock((x_offset + dx, y_offset, z_offset + dz), Block(most_common_block))
+    # --- SMOOTHING LOGIC ---
+    smoothing_radius = 6
+    sigma = 1.0
+    platform_weight = 10.0
 
-    # === Step 4: Place the building on top ===
+    # Area bounds for smoothing
+    min_x = max(x_offset - smoothing_radius, 0)
+    max_x = min(x_offset + orig_height + smoothing_radius, heights.shape[0] - 1)
+    min_z = max(z_offset - smoothing_radius, 0)
+    max_z = min(z_offset + orig_width + smoothing_radius, heights.shape[1] - 1)
+
+    height_slice = heights[min_x:max_x + 1, min_z:max_z + 1].copy().astype(float)
+    weight_slice = np.ones_like(height_slice)
+
+    # Inject platform and halo into smoothing map
+    for dx in range(-2, orig_height + 2):
+        for dz in range(-2, orig_width + 2):
+            world_x = x_offset + dx
+            world_z = z_offset + dz
+            local_x = world_x - min_x
+            local_z = world_z - min_z
+
+            if not (0 <= local_x < height_slice.shape[0] and 0 <= local_z < height_slice.shape[1]):
+                continue
+
+            distance_from_platform = max(
+                max(0, -dx),
+                max(0, dx - (orig_height - 1)),
+                max(0, -dz),
+                max(0, dz - (orig_width - 1)),
+            )
+
+            if distance_from_platform == 0:
+                weight = platform_weight
+                height = platform_y
+            elif distance_from_platform <= 2:
+                falloff = 1.0 - (distance_from_platform / 3.0)
+                weight = platform_weight * falloff
+                height = platform_y  # Keep same height, lower influence
+            else:
+                continue
+
+            height_slice[local_x, local_z] = height
+            weight_slice[local_x, local_z] = weight
+
+    # Apply Gaussian smoothing
+    blurred_values = gaussian_filter(height_slice * weight_slice, sigma=sigma)
+    blurred_weights = gaussian_filter(weight_slice, sigma=sigma)
+    epsilon = 1e-6
+    target_heights = np.floor(blurred_values / (blurred_weights + epsilon)).astype(int)
+
+    # Reassert platform height after smoothing
+    for dx in range(orig_height):
+        for dz in range(orig_width):
+            world_x = x_offset + dx
+            world_z = z_offset + dz
+            local_x = world_x - min_x
+            local_z = world_z - min_z
+            if 0 <= local_x < target_heights.shape[0] and 0 <= local_z < target_heights.shape[1]:
+                target_heights[local_x, local_z] = platform_y
+
+    # Apply smoothed terrain outside platform
+    for local_x in range(target_heights.shape[0]):
+        for local_z in range(target_heights.shape[1]):
+            world_x = min_x + local_x
+            world_z = min_z + local_z
+
+            # Skip platform itself
+            if x_offset <= world_x < x_offset + orig_height and z_offset <= world_z < z_offset + orig_width:
+                continue
+
+            try:
+                current_y = heights[world_x, world_z]
+                target_y = target_heights[local_x, local_z]
+            except IndexError:
+                continue
+
+            # Raise terrain
+            if current_y <= target_y:
+                ED.placeBlock((world_x, target_y, world_z), Block(most_common_block))
+                for y in range(current_y + 1, target_y + 1):
+                    ED.placeBlock((world_x, y, world_z), Block(most_common_block))
+                    ED.placeBlock((world_x, y-1, world_z), Block("blue_concrete"))
+                    ED.placeBlock((world_x, y-2, world_z), Block("blue_concrete"))
+            # Lower terrain
+            elif current_y > target_y:
+                ED.placeBlock((world_x, target_y, world_z), Block(most_common_block))
+                for y in range(target_y + 1, current_y + 1):
+
+                    ED.placeBlock((world_x, y, world_z), Block("air"))
+
+
+            # Update heightmap to new terrain
+            heights[world_x, world_z] = target_y
+
+    # 5x5 neighborhood smoothing with 55% threshold
+    for local_x in range(2, target_heights.shape[0] - 2):
+        for local_z in range(2, target_heights.shape[1] - 2):
+            world_x = min_x + local_x
+            world_z = min_z + local_z
+            current_y = heights[world_x, world_z]
+
+            # Get 5x5 neighborhood excluding center
+            neighborhood = [
+                heights[world_x + dx, world_z + dz]
+                for dx in [-2, -1, 0, 1, 2]
+                for dz in [-2, -1, 0, 1, 2]
+                if not (dx == 0 and dz == 0)
+            ]
+
+            height_counts = Counter(neighborhood)
+            mode_height, count = height_counts.most_common(1)[0]
+
+            if count >= 14 and abs(current_y - mode_height) >= 2:
+                # Apply correction
+                if current_y < mode_height:
+                    for y in range(current_y + 1, mode_height + 1):
+                        ED.placeBlock((world_x, y, world_z), Block(most_common_block))
+                else:
+                    for y in range(mode_height + 1, current_y + 1):
+                        ED.placeBlock((world_x, y, world_z), Block("air"))
+                    ED.placeBlock((world_x, mode_height, world_z), Block(most_common_block))
+
+                heights[world_x, world_z] = mode_height
+    # Place the actual building on top
     placeFromFile(
         f"builds/processed/{building['name']}.csv",
-        x_offset, y_offset + 1, z_offset,  # note the +1
+        x_offset, y_offset + 1, z_offset,
         orientation,
-        width, height
+        orig_width, orig_height
     )
+
 
 
 
@@ -162,14 +298,14 @@ from get_build_map import MapHolder
 BUILDING_TYPES = [
     #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
     #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
-    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 3, 'door_pos': (15, 0, 0)},
-    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
-    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
-    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
-    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 2, 'door_pos': (9, 0, 0)},
-    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 3, 'door_pos': (11, 0, 0)},
-    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
-    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 1, 'door_pos': (5, 0, 0)},
+     {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0)},
+     {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0)},
+     {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0)},
+     {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0)},
+     {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0)},
+     {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0)},
+     {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0)},
+     {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0)},
 ]
 
 buildArea = ED.getBuildArea()
