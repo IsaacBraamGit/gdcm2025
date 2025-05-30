@@ -230,22 +230,24 @@ def place_build(building):
             # Raise terrain
             if current_y < target_y:
                 for y in range(current_y + 1, target_y + 1):
-
-                    ED.placeBlock((world_x, y-1, world_z), Block(most_common_block))
-                    ED.placeBlock((world_x, y-2, world_z), Block(most_common_block_under))
-                    ED.placeBlock((world_x, y-3, world_z), Block(most_common_block_under))
+                    for delta in [1, 2, 3]:
+                        block_below = str(WORLDSLICE.getBlock((world_x, y - delta, world_z)).id)+ str(WORLDSLICE.getBlock((world_x, y - delta-1, world_z)).id)
+                        if block_below and "water" in block_below:
+                            continue  # skip placing over water
+                        block_to_place = most_common_block if delta == 1 else most_common_block_under
+                        ED.placeBlock((world_x, y - delta, world_z), Block(block_to_place))
             # Lower terrain
             elif current_y > target_y:
+                block_at_target = str(WORLDSLICE.getBlock((world_x, target_y - 1, world_z)).id)+str(WORLDSLICE.getBlock((world_x, target_y - 2, world_z)).id)
+                if not (block_at_target and "water" in block_at_target):
+                    ED.placeBlock((world_x, target_y - 1, world_z), Block(most_common_block))
+                for y in range(target_y + 1, current_y + 1):
+                    ED.placeBlock((world_x, y - 1, world_z), Block("air"))
 
-                ED.placeBlock((world_x, target_y-1, world_z), Block(most_common_block))
-                for y in range(target_y + 1 , current_y+1):
-
-                    ED.placeBlock((world_x, y-1, world_z), Block("air"))
             if current_y == target_y:
-                 ED.placeBlock((world_x, target_y-1, world_z), Block(most_common_block))
-            # if current_y+ 1 == target_y:
-            #     ED.placeBlock((world_x, target_y, world_z), Block("blue_concrete"))
-
+                block_at_target = str(WORLDSLICE.getBlock((world_x, target_y - 1, world_z)).id) +str(WORLDSLICE.getBlock((world_x, target_y - 2, world_z)).id)
+                if not (block_at_target and "water" in block_at_target):
+                    ED.placeBlock((world_x, target_y - 1, world_z), Block(most_common_block))
 
             # Update heightmap to new terrain
             heights[world_x, world_z] = target_y
@@ -276,14 +278,14 @@ from get_build_map import MapHolder
 BUILDING_TYPES = [
     #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
     #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
-     {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0)},
-     {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0)},
-     {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0)},
-     {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0)},
-     {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0)},
-     {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0)},
-     {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0)},
-     {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0)},
+     {'name': 'fhouse1', 'size': (30, 17), 'max': 30, 'border': 5, 'door_pos': (15, 0, 0)},
+     {'name': 'fhouse2', 'size': (13, 17), 'max': 30, 'border': 5, 'door_pos': (6, 0, 0)},
+     {'name': 'fhouse3', 'size': (13, 14), 'max': 30, 'border': 5, 'door_pos': (6, 0, 0)},
+     {'name': 'fhouse4', 'size': (10, 18), 'max': 30, 'border': 4, 'door_pos': (5, 0, 0)},
+     {'name': 'fhouse5', 'size': (18, 11), 'max': 30, 'border': 4, 'door_pos': (9, 0, 0)},
+     {'name': 'fhouse6', 'size': (22, 16), 'max': 30, 'border': 5, 'door_pos': (11, 0, 0)},
+     {'name': 'fhouse7', 'size': (10, 10), 'max': 30, 'border': 4, 'door_pos': (5, 0, 0)},
+     {'name': 'fhouse8', 'size': (10, 8), 'max': 30, 'border': 3, 'door_pos': (5, 0, 0)},
 ]
 
 buildArea = ED.getBuildArea()

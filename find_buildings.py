@@ -17,30 +17,10 @@ def find_min_idx( x):
     return int(k / ncol), int(k % ncol)
 import numpy as np
 
-def get_downhill_sides(heights, i, j, h, w, distance=6):
+def get_downhill_sides(heights, i, j, h, w, distance=10):
     max_i, max_j = heights.shape
 
-    if i - distance >= 0:
-        north_edge = heights[i, j:j+w]
-        north_comp = heights[i - distance, j:j+w]
-        north = (north_edge - north_comp).mean() / distance
-    else:
-        north = 0
-
-    if i + h - 1 + distance < max_i:
-        south_edge = heights[i + h - 1, j:j+w]
-        south_comp = heights[i + h - 1 + distance, j:j+w]
-        south = (south_edge - south_comp).mean() / distance
-    else:
-        south = 0
-
-    if j - distance >= 0:
-        west_edge = heights[i:i+h, j]
-        west_comp = heights[i:i+h, j - distance]
-        west = (west_edge - west_comp).mean() / distance
-    else:
-        west = 0
-
+    # EAST (j + w - 1 + distance)
     if j + w - 1 + distance < max_j:
         east_edge = heights[i:i+h, j + w - 1]
         east_comp = heights[i:i+h, j + w - 1 + distance]
@@ -48,7 +28,33 @@ def get_downhill_sides(heights, i, j, h, w, distance=6):
     else:
         east = 0
 
-    return [north, east, south, west]
+    # SOUTH (i + h - 1 + distance)
+    if i + h - 1 + distance < max_i:
+        south_edge = heights[i + h - 1, j:j+w]
+        south_comp = heights[i + h - 1 + distance, j:j+w]
+        south = (south_edge - south_comp).mean() / distance
+    else:
+        south = 0
+
+    # WEST (j - distance)
+    if j - distance >= 0:
+        west_edge = heights[i:i+h, j]
+        west_comp = heights[i:i+h, j - distance]
+        west = (west_edge - west_comp).mean() / distance
+    else:
+        west = 0
+
+    # NORTH (i - distance)
+    if i - distance >= 0:
+        north_edge = heights[i, j:j+w]
+        north_comp = heights[i - distance, j:j+w]
+        north = (north_edge - north_comp).mean() / distance
+    else:
+        north = 0
+
+    # ORDER: [east, south, west, north]
+    return [east, south, west, north]
+
 
 def get_direction_to_center(i, j, h, w, rows, cols, axis_swap=True):
     """
@@ -122,7 +128,7 @@ def get_avg_slope_map(slope_map, placement_map, h, w, border):
     sum_slope = convolve(slope_valid, kernel, mode='constant', cval=0.0)
     count_valid = convolve(valid_mask, kernel, mode='constant', cval=0.0)
 
-    avg_slope = sum_slope / count_valid + 0.001
+    avg_slope = sum_slope / count_valid + 0.01
     avg_slope[count_valid < h * w] = np.inf
 
     # Step 2: Invalidate placements where the full (building + border) region is not clear
@@ -172,7 +178,7 @@ def rotate_building(building, turn):
     return None
 
 
-def plot_placement(placement_map):
+def plot_placement(placement_map, slope_map):
     """Plot the building placement map rotated 90° counter-clockwise with inverted Y-axis."""
     # Rotate the matrix 90 degrees counter-clockwise
     rotated_map = np.rot90(np.rot90(np.rot90(placement_map)))
@@ -185,23 +191,20 @@ def plot_placement(placement_map):
     plt.axis('off')
     plt.show()
 
-def get_side_slopes(slope_map, i, j, h, w):
-    """
-    Returns the average slope of each side (N, E, S, W) for a building at (i, j) with size (h, w).
-    - North: top edge
-    - East: right edge
-    - South: bottom edge
-    - West: left edge
-    """
-    # Prevent out-of-bounds
-    north = slope_map[i, j:j+w].mean() if i >= 0 and i < slope_map.shape[0] else np.inf
-    south = slope_map[i+h-1, j:j+w].mean() if (i+h-1) < slope_map.shape[0] else np.inf
-    west  = slope_map[i:i+h, j].mean() if j >= 0 and j < slope_map.shape[1] else np.inf
-    east  = slope_map[i:i+h, j+w-1].mean() if (j+w-1) < slope_map.shape[1] else np.inf
-    return [north, east, south, west]
+    slope_map[slope_map == np.inf] = 0
+    rotated_map = np.rot90(np.rot90(np.rot90(slope_map)))
+
+    plt.figure(figsize=(12, 8))
+    ax = sns.heatmap(rotated_map, cmap="coolwarm", cbar=False, square=True,
+                     xticklabels=False, yticklabels=False)
+    ax.invert_yaxis()  # Invert the Y-axis
+    plt.title("Building Placement (Rotated 90° CCW & Y-Inverted)")
+    plt.axis('off')
+    plt.show()
 
 
-def get_placements(slope_map, building_types, heights, downhill_distance=6, downhill_thresh=2.0):
+
+def get_placements(slope_map, building_types, heights, downhill_distance=10, downhill_thresh=2.0):
     rows, cols = slope_map.shape
     placement_map = np.zeros_like(slope_map)
     building_spots = []
@@ -220,16 +223,15 @@ def get_placements(slope_map, building_types, heights, downhill_distance=6, down
 
             downhill = get_downhill_sides(heights, i, j, h, w, distance=downhill_distance)
             # Use the most negative value (steepest downhill)
-            steepest = np.min(downhill)
+            print(downhill)
+            steepest_up = np.min(downhill)
             # Also get the absolute value for all sides
-            flat_enough = np.all(np.abs(downhill) <= downhill_thresh)
-            flat_enough = True
-            if flat_enough:
-                # All directions are fairly flat, face center
-                orientation = get_direction_to_center(i, j, h, w, rows, cols)
+            if np.abs(steepest_up) > 0.1:
+                orientation = int(np.argmax(downhill))
             else:
-                # Face north toward steepest downhill
-                orientation = int(np.argmin(downhill))
+                orientation = get_direction_to_center(i, j, h, w, rows, cols)
+
+
 
             rotated = rotate_building(building, orientation)
             new_building = building.copy()
@@ -255,7 +257,7 @@ def get_placements(slope_map, building_types, heights, downhill_distance=6, down
 
             placed += 1
 
-    plot_placement(placement_map)
+    plot_placement(placement_map, slope_map)
     return building_spots
 
 
