@@ -117,7 +117,7 @@ def place_build(building):
         for dz in range(min_dz, max_dz + 1)
     ) // ((max_dx - min_dx + 1) * (max_dz - min_dz + 1))
 
-    y_offset = avg_height - 2
+    y_offset = avg_height - 1
     platform_y = y_offset + 1  # Height at which platform will be placed
 
     # Determine most common ground block
@@ -133,10 +133,11 @@ def place_build(building):
 
     most_common_block = block_counter.most_common(1)[0][0] if block_counter else "grass_block"
     most_common_block_under = most_common_block
-    if most_common_block == "dirt":
+    if most_common_block == "minecraft:dirt" or most_common_block_under == "minecraft:grass_block":
         most_common_block = "grass_block"
         most_common_block_under = "dirt"
-
+    print(most_common_block_under)
+    print(most_common_block)
     # Clear and place foundation
     for dx in range(orig_height):
         for dz in range(orig_width):
@@ -151,7 +152,7 @@ def place_build(building):
 
     # --- SMOOTHING LOGIC ---
     smoothing_radius = 6
-    sigma = 1.0
+    sigma = 1.8
     platform_weight = 10.0
 
     # Area bounds for smoothing
@@ -191,14 +192,14 @@ def place_build(building):
             else:
                 continue
 
-            height_slice[local_x, local_z] = height
+            height_slice[local_x, local_z] = height +1
             weight_slice[local_x, local_z] = weight
 
     # Apply Gaussian smoothing
     blurred_values = gaussian_filter(height_slice * weight_slice, sigma=sigma)
     blurred_weights = gaussian_filter(weight_slice, sigma=sigma)
     epsilon = 1e-6
-    target_heights = np.floor(blurred_values / (blurred_weights + epsilon)).astype(int)
+    target_heights = np.round(blurred_values / (blurred_weights + epsilon)).astype(int)
 
     # Reassert platform height after smoothing
     for dx in range(orig_height):
@@ -227,52 +228,29 @@ def place_build(building):
                 continue
 
             # Raise terrain
-            if current_y <= target_y:
-                ED.placeBlock((world_x, target_y, world_z), Block(most_common_block))
+            if current_y < target_y:
                 for y in range(current_y + 1, target_y + 1):
-                    ED.placeBlock((world_x, y, world_z), Block(most_common_block))
-                    ED.placeBlock((world_x, y-1, world_z), Block("blue_concrete"))
-                    ED.placeBlock((world_x, y-2, world_z), Block("blue_concrete"))
+
+                    ED.placeBlock((world_x, y-1, world_z), Block(most_common_block))
+                    ED.placeBlock((world_x, y-2, world_z), Block(most_common_block_under))
+                    ED.placeBlock((world_x, y-3, world_z), Block(most_common_block_under))
             # Lower terrain
             elif current_y > target_y:
-                ED.placeBlock((world_x, target_y, world_z), Block(most_common_block))
-                for y in range(target_y + 1, current_y + 1):
 
-                    ED.placeBlock((world_x, y, world_z), Block("air"))
+                ED.placeBlock((world_x, target_y-1, world_z), Block(most_common_block))
+                for y in range(target_y + 1 , current_y+1):
+
+                    ED.placeBlock((world_x, y-1, world_z), Block("air"))
+            if current_y == target_y:
+                 ED.placeBlock((world_x, target_y-1, world_z), Block(most_common_block))
+            # if current_y+ 1 == target_y:
+            #     ED.placeBlock((world_x, target_y, world_z), Block("blue_concrete"))
 
 
             # Update heightmap to new terrain
             heights[world_x, world_z] = target_y
 
-    # 5x5 neighborhood smoothing with 55% threshold
-    for local_x in range(2, target_heights.shape[0] - 2):
-        for local_z in range(2, target_heights.shape[1] - 2):
-            world_x = min_x + local_x
-            world_z = min_z + local_z
-            current_y = heights[world_x, world_z]
-
-            # Get 5x5 neighborhood excluding center
-            neighborhood = [
-                heights[world_x + dx, world_z + dz]
-                for dx in [-2, -1, 0, 1, 2]
-                for dz in [-2, -1, 0, 1, 2]
-                if not (dx == 0 and dz == 0)
-            ]
-
-            height_counts = Counter(neighborhood)
-            mode_height, count = height_counts.most_common(1)[0]
-
-            if count >= 14 and abs(current_y - mode_height) >= 2:
-                # Apply correction
-                if current_y < mode_height:
-                    for y in range(current_y + 1, mode_height + 1):
-                        ED.placeBlock((world_x, y, world_z), Block(most_common_block))
-                else:
-                    for y in range(mode_height + 1, current_y + 1):
-                        ED.placeBlock((world_x, y, world_z), Block("air"))
-                    ED.placeBlock((world_x, mode_height, world_z), Block(most_common_block))
-
-                heights[world_x, world_z] = mode_height
+    
     # Place the actual building on top
     placeFromFile(
         f"builds/processed/{building['name']}.csv",
@@ -314,7 +292,7 @@ heights = WORLDSLICE.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
 build_map = MapHolder(ED, heights, 1.3)
 build_map.find_flat_areas_and_trees(print_colors=False)
 with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
-    build_spots = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES)
+    build_spots = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES, heights)
     for building in build_spots:
         print(building["orientation"])
         place_build(building)

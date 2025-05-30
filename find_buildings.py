@@ -15,6 +15,81 @@ def find_min_idx( x):
     k = x.argmin()
     ncol = x.shape[1]
     return int(k / ncol), int(k % ncol)
+import numpy as np
+
+def get_downhill_sides(heights, i, j, h, w, distance=6):
+    max_i, max_j = heights.shape
+
+    if i - distance >= 0:
+        north_edge = heights[i, j:j+w]
+        north_comp = heights[i - distance, j:j+w]
+        north = (north_edge - north_comp).mean() / distance
+    else:
+        north = 0
+
+    if i + h - 1 + distance < max_i:
+        south_edge = heights[i + h - 1, j:j+w]
+        south_comp = heights[i + h - 1 + distance, j:j+w]
+        south = (south_edge - south_comp).mean() / distance
+    else:
+        south = 0
+
+    if j - distance >= 0:
+        west_edge = heights[i:i+h, j]
+        west_comp = heights[i:i+h, j - distance]
+        west = (west_edge - west_comp).mean() / distance
+    else:
+        west = 0
+
+    if j + w - 1 + distance < max_j:
+        east_edge = heights[i:i+h, j + w - 1]
+        east_comp = heights[i:i+h, j + w - 1 + distance]
+        east = (east_edge - east_comp).mean() / distance
+    else:
+        east = 0
+
+    return [north, east, south, west]
+
+def get_direction_to_center(i, j, h, w, rows, cols, axis_swap=True):
+    """
+    Returns orientation (0=N, 1=E, 2=S, 3=W) to face the center,
+    with optional axis swap for Minecraft/plot rotation.
+    axis_swap: if True, swaps axes to match Minecraft's X/Z orientation.
+    """
+    # Building center
+    ci = i + h / 2
+    cj = j + w / 2
+    # Map center
+    mi = rows / 2
+    mj = cols / 2
+
+    if axis_swap:
+        # Swap i (row) <-> Z and j (col) <-> X for Minecraft
+        cX, cZ = cj, ci
+        mX, mZ = mj, mi
+    else:
+        cX, cZ = ci, cj
+        mX, mZ = mi, mj
+
+    # Vector from building to map center
+    dX = mX - cX
+    dZ = mZ - cZ
+
+    # Find cardinal direction (Minecraft: 0=N, 1=E, 2=S, 3=W)
+    if abs(dX) > abs(dZ):
+        # East or West
+        if dX > 0:
+            orientation = 0  # East
+        else:
+            orientation = 2  # West
+    else:
+        # North or South
+        if dZ > 0:
+            orientation = 1  # South
+        else:
+            orientation = 3  # North
+    return orientation
+
 
 
 def place_building(i, j, h, w, border, placement_map, building):
@@ -74,22 +149,22 @@ def rotate_building(building, turn):
     h, w = building["size"]
     door_x, door_z, door_y = building["door_pos"]
 
-    if turn == 0:
+    if turn == 2:
         return {"size": (h, w), "door_pos": (door_x,0, door_y)}
 
-    elif turn == 1:  # 90°
+    elif turn == 3:  # 90°
         new_size = (w, h)
         new_door_x = door_y
         new_door_y = h - 1 - door_x
         return {"size": new_size, "door_pos": (new_door_x,0, new_door_y)}
 
-    elif turn == 2:  # 180°
+    elif turn == 0:  # 180°
         new_size = (h, w)
         new_door_x = h - 1 - door_x
         new_door_y = w - 1 - door_y
         return {"size": new_size, "door_pos": (new_door_x,0, new_door_y)}
 
-    elif turn == 3:  # 270°
+    elif turn == 1:  # 270°
         new_size = (w, h)
         new_door_x = w - 1 - door_y
         new_door_y = door_x
@@ -110,8 +185,23 @@ def plot_placement(placement_map):
     plt.axis('off')
     plt.show()
 
+def get_side_slopes(slope_map, i, j, h, w):
+    """
+    Returns the average slope of each side (N, E, S, W) for a building at (i, j) with size (h, w).
+    - North: top edge
+    - East: right edge
+    - South: bottom edge
+    - West: left edge
+    """
+    # Prevent out-of-bounds
+    north = slope_map[i, j:j+w].mean() if i >= 0 and i < slope_map.shape[0] else np.inf
+    south = slope_map[i+h-1, j:j+w].mean() if (i+h-1) < slope_map.shape[0] else np.inf
+    west  = slope_map[i:i+h, j].mean() if j >= 0 and j < slope_map.shape[1] else np.inf
+    east  = slope_map[i:i+h, j+w-1].mean() if (j+w-1) < slope_map.shape[1] else np.inf
+    return [north, east, south, west]
 
-def get_placements(slope_map, building_types):
+
+def get_placements(slope_map, building_types, heights, downhill_distance=6, downhill_thresh=2.0):
     rows, cols = slope_map.shape
     placement_map = np.zeros_like(slope_map)
     building_spots = []
@@ -122,39 +212,53 @@ def get_placements(slope_map, building_types):
         placed = 0
 
         while placed < max_count:
-            turn = random.randint(0, 3)
-            rotated = rotate_building(building, turn)
-            new_building = building.copy()
-            new_building["size"] = rotated["size"]
-            new_building["door_pos"]= rotated["door_pos"]
-            h, w = new_building["size"]
+            h, w = building["size"]
             filterd_slope_building_map = get_avg_slope_map(slope_map, placement_map, h, w, border)
-
             i, j = find_min_idx(filterd_slope_building_map)
-
             if filterd_slope_building_map[i, j] > SLOPE_THRESHOLD:
                 break
-            place_building(i, j, h, w, border, placement_map, new_building)
+
+            downhill = get_downhill_sides(heights, i, j, h, w, distance=downhill_distance)
+            # Use the most negative value (steepest downhill)
+            steepest = np.min(downhill)
+            # Also get the absolute value for all sides
+            flat_enough = np.all(np.abs(downhill) <= downhill_thresh)
+            flat_enough = True
+            if flat_enough:
+                # All directions are fairly flat, face center
+                orientation = get_direction_to_center(i, j, h, w, rows, cols)
+            else:
+                # Face north toward steepest downhill
+                orientation = int(np.argmin(downhill))
+
+            rotated = rotate_building(building, orientation)
+            new_building = building.copy()
+            new_building["size"] = rotated["size"]
+            new_building["door_pos"] = rotated["door_pos"]
+            h_new, w_new = new_building["size"]
+
+            place_building(i, j, h_new, w_new, border, placement_map, new_building)
             building_spots.append({
                 "name": new_building["name"],
                 "top_left": (i, j),
-                "size": (h, w),
+                "size": (h_new, w_new),
                 "border": border,
                 "building_type": new_building,
-                "orientation": turn,
+                "orientation": orientation,
             })
 
             bi_start = max(i - border, 0)
-            bi_end   = min(i + h + border, rows)
+            bi_end   = min(i + h_new + border, rows)
             bj_start = max(j - border, 0)
-            bj_end   = min(j + w + border, cols)
-
+            bj_end   = min(j + w_new + border, cols)
             slope_map[bi_start:bi_end, bj_start:bj_end] = np.inf
 
             placed += 1
-    plot_placement(placement_map)
 
+    plot_placement(placement_map)
     return building_spots
+
+
 
 if __name__ == "__main__":
     BUILDING_TYPES = [
