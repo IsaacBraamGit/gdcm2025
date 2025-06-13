@@ -213,25 +213,33 @@ def get_placements(slope_map, building_types, heights, downhill_distance=10, dow
         max_count = building["max"]
         border = building["border"]
         placed = 0
+        is_first_building = (len(building_spots) == 0)
 
         while placed < max_count:
             h, w = building["size"]
-            filterd_slope_building_map = get_avg_slope_map(slope_map, placement_map, h, w, border)
+            slope_input = slope_map.copy()
+
+            # Penalize distance from center for the very first building
+            if is_first_building and placed == 0:
+                y_idxs, x_idxs = np.indices(slope_map.shape)
+                center_y, center_x = rows // 2, cols // 2
+                distance_map = np.sqrt((y_idxs - center_y) ** 2 + (x_idxs - center_x) ** 2)
+                distance_penalty = distance_map / distance_map.max() * 2.0  # Tune this factor
+                slope_input += distance_penalty
+
+            filterd_slope_building_map = get_avg_slope_map(slope_input, placement_map, h, w, border)
             i, j = find_min_idx(filterd_slope_building_map)
             if filterd_slope_building_map[i, j] > SLOPE_THRESHOLD:
                 break
 
             downhill = get_downhill_sides(heights, i, j, h, w, distance=downhill_distance)
-            # Use the most negative value (steepest downhill)
             print(downhill)
             steepest_up = np.min(downhill)
-            # Also get the absolute value for all sides
+
             if np.abs(steepest_up) > 0.1:
                 orientation = int(np.argmax(downhill))
             else:
                 orientation = get_direction_to_center(i, j, h, w, rows, cols)
-
-
 
             rotated = rotate_building(building, orientation)
             new_building = building.copy()
@@ -247,12 +255,13 @@ def get_placements(slope_map, building_types, heights, downhill_distance=10, dow
                 "border": border,
                 "building_type": new_building,
                 "orientation": orientation,
+                'y_offset': new_building["y_offset"],
             })
 
             bi_start = max(i - border, 0)
-            bi_end   = min(i + h_new + border, rows)
+            bi_end = min(i + h_new + border, rows)
             bj_start = max(j - border, 0)
-            bj_end   = min(j + w_new + border, cols)
+            bj_end = min(j + w_new + border, cols)
             slope_map[bi_start:bi_end, bj_start:bj_end] = np.inf
 
             placed += 1
@@ -266,14 +275,14 @@ if __name__ == "__main__":
     BUILDING_TYPES = [
     #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
     #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
-    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 3, 'door_pos': (15, 0, 0)},
-    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
-    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0)},
-    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
-    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 2, 'door_pos': (9, 0, 0)},
-    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 3, 'door_pos': (11, 0, 0)},
-    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0)},
-    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 1, 'door_pos': (5, 0, 0)},
+    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 3, 'door_pos': (15, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 2, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 2, 'door_pos': (9, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 3, 'door_pos': (11, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 2, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 1, 'door_pos': (5, 0, 0), 'y_offset': 0},
 ]
 
     with open("slope.txt", "r") as f:

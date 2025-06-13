@@ -1,8 +1,8 @@
 import nbtlib
 import pandas as pd
 
-for i in range(1, 9):
-    schem_name = f"fhouse{i}"
+for i in range(1):
+    schem_name = f"collection"
     schem_path = f"raw/{schem_name}.schem"
     nbt = nbtlib.load(schem_path)
     schem = nbt["Schematic"]
