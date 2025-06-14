@@ -99,14 +99,6 @@ def add_reactor_tower(wx, wz, base_y, H, R0):
                 if r*r - 2*r <= dist_sq <= r*r:
                     editor.placeBlock((wx + dx, base_y + y, wz + dz), Block("red_stained_glass"))
 
-    # === 2. Fill lava inside the shell ===
-    for y in range(H + 1):
-        r = wall_radii[y] - 1
-        for dx in range(-r, r + 1):
-            for dz in range(-r, r + 1):
-                if dx*dx + dz*dz <= r*r:
-                    editor.placeBlock((wx + dx, base_y + y, wz + dz), Block("lava"))
-
     # === 3. Bottom copper cap (1 layer) ===
     bottom_radius = wall_radii[0]
     for dx in range(-bottom_radius, bottom_radius + 1):
@@ -121,6 +113,16 @@ def add_reactor_tower(wx, wz, base_y, H, R0):
         for dz in range(-top_radius, top_radius + 1):
             if dx**2 + dz**2 <= top_radius**2:
                 editor.placeBlock((wx + dx, top_y, wz + dz), Block("waxed_copper_bulb"))
+
+    # === 2. Fill lava inside the shell ===
+    for y in range(H + 1):
+        r = wall_radii[y] - 1
+        for dx in range(-r, r + 1):
+            for dz in range(-r, r + 1):
+                if dx*dx + dz*dz <= r*r:
+                    editor.placeBlock((wx + dx, base_y + y, wz + dz), Block("lava"))
+
+
     # --- First: small filled circle on top ---
     radius = 2  # Gives a 5x5 block disc
     for dx in range(-radius, radius + 1):
@@ -147,7 +149,7 @@ def add_bubble_column(binary_array, build_height, radius):
     dz = avg_z - binary_array.shape[1] // 2
 
     dy = int(math.sqrt(max(0, radius ** 2 - dx ** 2 - dz ** 2)))
-
+    placeFromFile("builds/processed/red_skull.csv", dx - 34, dy - 145, dz - 33)
     wx, wz = dx, dz
     base_y = 5
     top_y = build_height + dy
@@ -257,7 +259,7 @@ def build_image_on_dome(
 def place_logo(x,y,z):
     # Run with pushTransform
     buildArea = editor.getBuildArea()
-
+    editor.bufferLimit = 2048
     # Replace function call accordingly
     with editor.pushTransform((buildArea.offset.x+x, y, buildArea.offset.z+z)):
         build_image_on_dome(
