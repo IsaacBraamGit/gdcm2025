@@ -389,9 +389,9 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
         print(building["orientation"])
         place_build(building)
 
-
+    from scipy.ndimage import gaussian_filter
+    import numpy as np
     import random
-    from collections import defaultdict
 
     path_tiles = set()  # Global set of all (x, z) that become path
 
@@ -423,18 +423,45 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
             (x, y + 3, z, "stone_bricks"),
             (x - 1, y + 3, z, "stone_brick_stairs[facing=east,half=bottom]"),
             (x + 1, y + 3, z, "stone_brick_stairs[facing=west,half=bottom]"),
-            (x , y + 3, z-1, "stone_brick_stairs[facing=south,half=bottom]"),
-            (x , y + 3, z+1, "stone_brick_stairs[facing=north,half=bottom]"),
+            (x, y + 3, z - 1, "stone_brick_stairs[facing=south,half=bottom]"),
+            (x, y + 3, z + 1, "stone_brick_stairs[facing=north,half=bottom]"),
             (x - 1, y + 2, z, "lantern"),
             (x + 1, y + 2, z, "lantern"),
-            (x , y + 2, z - 1, "lantern"),
-            (x , y + 2, z + 1, "lantern"),
+            (x, y + 2, z - 1, "lantern"),
+            (x, y + 2, z + 1, "lantern"),
         ]
         if (x, z) not in path_columns:
             for bx, by, bz, block_type in structure:
                 ED.placeBlock((bx, by, bz), Block(block_type))
         light_post_positions.append((x, z))
 
+
+    # --- PRE-PROCESS: Smooth terrain for 3x3 path tiles using Gaussian filter ---
+
+    # Create mask and height map for smoothed 3x3 path area
+    path_mask = np.zeros_like(final_paths, dtype=float)
+    path_heightmap = np.zeros_like(heights, dtype=float)
+
+    for x in range(final_paths.shape[0]):
+        for z in range(final_paths.shape[1]):
+            if final_paths[x, z] == 1:
+                for dx in range(-1, 2):
+                    for dz in range(-1, 2):
+                        nx, nz = x + dx, z + dz
+                        if 0 <= nx < final_paths.shape[0] and 0 <= nz < final_paths.shape[1]:
+                            path_mask[nx, nz] = 1
+                            path_heightmap[nx, nz] = heights[nx, nz]
+
+    # Apply Gaussian blur
+    sigma = 3.0  # Adjust for smoothing level
+    blurred_heights = gaussian_filter(path_heightmap, sigma=sigma)
+    blurred_mask = gaussian_filter(path_mask, sigma=sigma)
+
+    # Normalize and update only the relevant (3x3-expanded) path tiles
+    for x in range(final_paths.shape[0]):
+        for z in range(final_paths.shape[1]):
+            if path_mask[x, z] > 0:
+                heights[x, z] = int(round(blurred_heights[x, z] / (blurred_mask[x, z] + 1e-6)))
 
     # --- Step 1: Build 3x3 paths and track path columns ---
     for x in range(final_paths.shape[0]):
@@ -446,8 +473,31 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                         if 0 <= nx < final_paths.shape[0] and 0 <= nz < final_paths.shape[1]:
                             ny = heights[nx, nz] - 1
                             block = random.choice(path_blocks)
+
+                            # Clear space above the path
+                            for dy in range(1, 6):  # Clear up to 5 blocks above
+                                ED.placeBlock((nx, ny + dy, nz), Block("air"))
+                            # Set the path block
                             ED.placeBlock((nx, ny, nz), Block(block))
+
+
                             path_columns.add((nx, nz))
+    # --- Step 1.5: Add slabs where path height difference is 1 ---
+    for x, z in path_columns:
+        current_y = heights[x, z]
+
+        for dx, dz in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nx, nz = x + dx, z + dz
+            if (nx, nz) in path_columns:
+                neighbor_y = heights[nx, nz]
+                height_diff = current_y - neighbor_y
+
+                if height_diff == 1:
+                    # Current is higher — place slab at neighbor (lower)
+                    ED.placeBlock((nx, neighbor_y, nz), Block("oak_slab[type=bottom]"))
+                elif height_diff == -1:
+                    # Neighbor is higher — place slab at current (lower)
+                    ED.placeBlock((x, current_y, z), Block("oak_slab[type=bottom]"))
 
     # --- Step 2: Decorate around the path ---
     for x in range(final_paths.shape[0]):
