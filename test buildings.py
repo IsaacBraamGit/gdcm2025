@@ -396,31 +396,50 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
     path_tiles = set()  # Global set of all (x, z) that become path
 
     # Define path materials and decorations
-    path_blocks = [ "coarse_dirt", "dirt","dirt_path"]
-    decorations = ["oak_leaves", "cobblestone_wall", "stone_slab", "oak_fence","mossy_cobblestone"]
+    path_blocks = ["dirt_path"]
+    decorations = ["oak_leaves[persistent=true]", "oak_fence"]
 
     final_paths = make_paths(build_map.block_slope_score, placement_map, build_map.water_mask)
-    path_tiles = set()  # All (x, z) tiles used by path (3x3 for each pixel)
+
+    path_columns = set()  # All (x, z) columns used by path
+    light_post_positions = []  # List of placed light posts
+    MIN_LIGHT_SPACING = 8  # Minimum spacing between lamp posts
 
 
-    # --- Helper: Build Light Post like the image ---
+    # --- Helper: Check light post spacing ---
+    def too_close_to_other_posts(x, z):
+        for px, pz in light_post_positions:
+            if abs(px - x) + abs(pz - z) < MIN_LIGHT_SPACING:
+                return True
+        return False
+
+
+    # --- Helper: Build a full street lamp post ---
     def build_light_post(x, y, z):
-        ED.placeBlock((x, y, z), Block("stone_bricks"))
-        ED.placeBlock((x, y + 1, z), Block("stone_brick_wall"))
-        ED.placeBlock((x, y + 2, z), Block("stone_brick_wall"))
-        ED.placeBlock((x - 1, y + 3, z), Block("stone_brick_stairs[facing=east,half=bottom]"))
-        ED.placeBlock((x + 1, y + 3, z), Block("stone_brick_stairs[facing=west,half=bottom]"))
-        ED.placeBlock((x - 1, y + 2, z), Block("lantern"))
-        ED.placeBlock((x + 1, y + 2, z), Block("lantern"))
+        structure = [
+            (x, y, z, "stone_bricks"),
+            (x, y + 1, z, "stone_brick_wall"),
+            (x, y + 2, z, "stone_brick_wall"),
+            (x, y + 3, z, "stone_bricks"),
+            (x - 1, y + 3, z, "stone_brick_stairs[facing=east,half=bottom]"),
+            (x + 1, y + 3, z, "stone_brick_stairs[facing=west,half=bottom]"),
+            (x , y + 3, z-1, "stone_brick_stairs[facing=south,half=bottom]"),
+            (x , y + 3, z+1, "stone_brick_stairs[facing=north,half=bottom]"),
+            (x - 1, y + 2, z, "lantern"),
+            (x + 1, y + 2, z, "lantern"),
+            (x , y + 2, z - 1, "lantern"),
+            (x , y + 2, z + 1, "lantern"),
+        ]
+        if (x, z) not in path_columns:
+            for bx, by, bz, block_type in structure:
+                ED.placeBlock((bx, by, bz), Block(block_type))
+        light_post_positions.append((x, z))
 
 
-    # --- Main path + decor loop ---
+    # --- Step 1: Build 3x3 paths and track path columns ---
     for x in range(final_paths.shape[0]):
         for z in range(final_paths.shape[1]):
             if final_paths[x, z] == 1:
-                path_block_positions = []
-
-                # Place 3x3 path centered on (x, z)
                 for dx in range(-1, 2):
                     for dz in range(-1, 2):
                         nx, nz = x + dx, z + dz
@@ -428,39 +447,40 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                             ny = heights[nx, nz] - 1
                             block = random.choice(path_blocks)
                             ED.placeBlock((nx, ny, nz), Block(block))
-                            path_block_positions.append((nx, nz))
-                            path_tiles.add((nx, nz))
+                            path_columns.add((nx, nz))
 
-                # Decorate around path tiles
-                for (px, pz) in path_block_positions:
-                    for dx, dz in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                        adj_x, adj_z = px + dx, pz + dz
-                        if (adj_x, adj_z) in path_tiles:
-                            continue  # Skip if it's a path tile
-                        if 0 <= adj_x < final_paths.shape[0] and 0 <= adj_z < final_paths.shape[1]:
-                            adj_y = heights[adj_x, adj_z]
+    # --- Step 2: Decorate around the path ---
+    for x in range(final_paths.shape[0]):
+        for z in range(final_paths.shape[1]):
+            if final_paths[x, z] == 1:
+                for dx in range(-2, 3):
+                    for dz in range(-2, 3):
+                        nx, nz = x + dx, z + dz
 
-                            # Side decoration
-                            if ED.getBlock((adj_x, adj_y, adj_z)) == Block("minecraft:air") and random.random() < 0.25:
-                                deco = random.choice(decorations)
-                                ED.placeBlock((adj_x, adj_y, adj_z), Block(deco))
-
-                            # Overhead decor
-                            if ED.getBlock((adj_x, adj_y + 1, adj_z)) == Block("minecraft:air") and random.random() < 0.15:
-                                over = random.choice(["oak_leaves", "oak_fence"])
-                                ED.placeBlock((adj_x, adj_y + 1, adj_z), Block(over))
-
-                # Occasionally place lamp post beside the path
-                if random.random() < 0.05:
-                    for dx, dz in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
-                        lx, lz = x + dx, z + dz
-                        if (lx, lz) in path_tiles:
+                        # Skip if outside bounds or inside path
+                        if not (0 <= nx < final_paths.shape[0] and 0 <= nz < final_paths.shape[1]):
                             continue
-                        if 0 <= lx < final_paths.shape[0] and 0 <= lz < final_paths.shape[1]:
-                            ly = heights[lx, lz]
-                            if ED.getBlock((lx, ly, lz)) == Block("minecraft:air"):
-                                build_light_post(lx, ly, lz)
-                                break  # Only one lamp per path node
+                        if (nx, nz) in path_columns:
+                            continue
+
+                        ny = heights[nx, nz]
+
+                        # Decoration on ground
+                        if ED.getBlock((nx, ny, nz)) == Block("minecraft:air") and random.random() < 0.25:
+                            deco = random.choice(decorations)
+                            ED.placeBlock((nx, ny, nz), Block(deco))
+
+                        # Overhead decoration
+                        if ED.getBlock((nx, ny + 1, nz)) == Block("minecraft:air") and random.random() < 0.15:
+                            over = random.choice(["oak_leaves[persistent=true]"])
+                            ED.placeBlock((nx, ny + 1, nz), Block(over))
+
+                        # Street lamp — sparse and spaced
+                        if random.random() < 0.03 and not too_close_to_other_posts(nx, nz):
+                            build_light_post(nx, ny, nz)
+
+
+
 x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1
 z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]

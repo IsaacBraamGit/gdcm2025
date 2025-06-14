@@ -201,7 +201,7 @@ def make_paths(slope, map_data, watermask):
             path_array = get_neighbour_paths(paths, map_avoid, slope)
             paths[i] = alter_path(paths[i], path_array)
 
-        plot_iteration(map_data.copy(), paths, iter_num + 1)
+        #plot_iteration(map_data.copy(), paths, iter_num + 1)
 
     mapcopy = map_data.copy()
     final_paths = np.zeros_like(map_data, dtype=int)
