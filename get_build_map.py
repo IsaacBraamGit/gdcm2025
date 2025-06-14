@@ -13,6 +13,7 @@ class MapHolder:
         self.LASTX, self.LASTY, self.LASTZ = BUILD_AREA.last
         self.SIZEX, self.SIZEY, self.SIZEZ = BUILD_AREA.size
 
+        self.water_mask = np.zeros((self.SIZEX, self.SIZEZ), dtype=bool)
         self.trees_found = []
         for wood in ["oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove"]:
             self.trees_found.append(wood)
@@ -57,7 +58,8 @@ class MapHolder:
                 score_current_block = 0
 
                 if self.is_water(x, height_current_block, z):
-                    block_slope_score[x - self.STARTX, z - self.STARTZ] = 10
+                    self.water_mask[x - self.STARTX, z - self.STARTZ] = True
+                    block_slope_score[x - self.STARTX, z - self.STARTZ] = 50
                 elif self.is_tree_count(x, height_current_block, z):
                     tree_spots[x - self.STARTX, z - self.STARTZ] = True
                     block_slope_score[x - self.STARTX, z - self.STARTZ] = 1

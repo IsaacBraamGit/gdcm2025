@@ -6,8 +6,11 @@ import csv
 import numpy as np
 from scipy.ndimage import gaussian_filter
 from collections import Counter
+from Water_sim import make_paths
 
 ED = Editor(buffering=True)
+
+
 # === Block Translator and Placement Generator ===
 
 
@@ -71,6 +74,7 @@ def parse_props(block_str):
 
         return name, props
     return block_str.replace("minecraft:", "").strip(), {}
+
 
 def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, height):
     print(f"Placing blocks from {filename} with orientation {orientation}...")
@@ -171,11 +175,12 @@ def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, he
             ED.placeBlock(target_pos, Block(name, props, data))
     print("Done.")
 
+
 from collections import Counter
+
 
 def place_build(building):
     print(f"Placing {building['name']} in the world...")
-
 
     orig_height, orig_width = building["size"]
     orientation = building["orientation"]
@@ -274,7 +279,7 @@ def place_build(building):
             else:
                 continue
 
-            height_slice[local_x, local_z] = height +1
+            height_slice[local_x, local_z] = height + 1
             weight_slice[local_x, local_z] = weight
 
     # Apply Gaussian smoothing
@@ -313,28 +318,30 @@ def place_build(building):
             if current_y < target_y:
                 for y in range(current_y + 1, target_y + 1):
                     for delta in [1, 2, 3]:
-                        block_below = str(WORLDSLICE.getBlock((world_x, y - delta, world_z)).id)+ str(WORLDSLICE.getBlock((world_x, y - delta-1, world_z)).id)
+                        block_below = str(WORLDSLICE.getBlock((world_x, y - delta, world_z)).id) + str(
+                            WORLDSLICE.getBlock((world_x, y - delta - 1, world_z)).id)
                         if block_below and "water" in block_below:
                             continue  # skip placing over water
                         block_to_place = most_common_block if delta == 1 else most_common_block_under
                         ED.placeBlock((world_x, y - delta, world_z), Block(block_to_place))
             # Lower terrain
             elif current_y > target_y:
-                block_at_target = str(WORLDSLICE.getBlock((world_x, target_y - 1, world_z)).id)+str(WORLDSLICE.getBlock((world_x, target_y - 2, world_z)).id)
+                block_at_target = str(WORLDSLICE.getBlock((world_x, target_y - 1, world_z)).id) + str(
+                    WORLDSLICE.getBlock((world_x, target_y - 2, world_z)).id)
                 if not (block_at_target and "water" in block_at_target):
                     ED.placeBlock((world_x, target_y - 1, world_z), Block(most_common_block))
                 for y in range(target_y + 1, current_y + 1):
                     ED.placeBlock((world_x, y - 1, world_z), Block("air"))
 
             if current_y == target_y:
-                block_at_target = str(WORLDSLICE.getBlock((world_x, target_y - 1, world_z)).id) +str(WORLDSLICE.getBlock((world_x, target_y - 2, world_z)).id)
+                block_at_target = str(WORLDSLICE.getBlock((world_x, target_y - 1, world_z)).id) + str(
+                    WORLDSLICE.getBlock((world_x, target_y - 2, world_z)).id)
                 if not (block_at_target and "water" in block_at_target):
                     ED.placeBlock((world_x, target_y - 1, world_z), Block(most_common_block))
 
             # Update heightmap to new terrain
             heights[world_x, world_z] = target_y
 
-    
     # Place the actual building on top
     placeFromFile(
         f"builds/processed/{building['name']}.csv",
@@ -344,10 +351,9 @@ def place_build(building):
     )
 
 
-
-
 from find_buildings import *
 from get_build_map import MapHolder
+
 # 🏠 fhouse1: Max X (width) = 30, Max Y (height) = 16, Max Z (depth) = 17
 # 🏠 fhouse2: Max X (width) = 13, Max Y (height) = 17, Max Z (depth) = 17
 # 🏠 fhouse3: Max X (width) = 13, Max Y (height) = 12, Max Z (depth) = 14
@@ -360,15 +366,16 @@ from get_build_map import MapHolder
 BUILDING_TYPES = [
     #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
     #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
-     {'name': 'collection_with_inventory', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': -3},
-     {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
-     {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-     {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-     {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-     {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
-     {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
-     {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-     {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'collection_with_inventory', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (15, 0, 0),
+     'y_offset': -3},
+    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
 ]
 
 buildArea = ED.getBuildArea()
@@ -377,13 +384,85 @@ heights = WORLDSLICE.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
 build_map = MapHolder(ED, heights, 1.3)
 build_map.find_flat_areas_and_trees(print_colors=False)
 with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
-    build_spots = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES, heights)
+    build_spots, placement_map = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES, heights)
     for building in build_spots:
         print(building["orientation"])
         place_build(building)
 
-x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0]/2) +1
-z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1]/2)+1
+
+    import random
+    from collections import defaultdict
+
+    path_tiles = set()  # Global set of all (x, z) that become path
+
+    # Define path materials and decorations
+    path_blocks = [ "coarse_dirt", "dirt","dirt_path"]
+    decorations = ["oak_leaves", "cobblestone_wall", "stone_slab", "oak_fence","mossy_cobblestone"]
+
+    final_paths = make_paths(build_map.block_slope_score, placement_map, build_map.water_mask)
+    path_tiles = set()  # All (x, z) tiles used by path (3x3 for each pixel)
+
+
+    # --- Helper: Build Light Post like the image ---
+    def build_light_post(x, y, z):
+        ED.placeBlock((x, y, z), Block("stone_bricks"))
+        ED.placeBlock((x, y + 1, z), Block("stone_brick_wall"))
+        ED.placeBlock((x, y + 2, z), Block("stone_brick_wall"))
+        ED.placeBlock((x - 1, y + 3, z), Block("stone_brick_stairs[facing=east,half=bottom]"))
+        ED.placeBlock((x + 1, y + 3, z), Block("stone_brick_stairs[facing=west,half=bottom]"))
+        ED.placeBlock((x - 1, y + 2, z), Block("lantern"))
+        ED.placeBlock((x + 1, y + 2, z), Block("lantern"))
+
+
+    # --- Main path + decor loop ---
+    for x in range(final_paths.shape[0]):
+        for z in range(final_paths.shape[1]):
+            if final_paths[x, z] == 1:
+                path_block_positions = []
+
+                # Place 3x3 path centered on (x, z)
+                for dx in range(-1, 2):
+                    for dz in range(-1, 2):
+                        nx, nz = x + dx, z + dz
+                        if 0 <= nx < final_paths.shape[0] and 0 <= nz < final_paths.shape[1]:
+                            ny = heights[nx, nz] - 1
+                            block = random.choice(path_blocks)
+                            ED.placeBlock((nx, ny, nz), Block(block))
+                            path_block_positions.append((nx, nz))
+                            path_tiles.add((nx, nz))
+
+                # Decorate around path tiles
+                for (px, pz) in path_block_positions:
+                    for dx, dz in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        adj_x, adj_z = px + dx, pz + dz
+                        if (adj_x, adj_z) in path_tiles:
+                            continue  # Skip if it's a path tile
+                        if 0 <= adj_x < final_paths.shape[0] and 0 <= adj_z < final_paths.shape[1]:
+                            adj_y = heights[adj_x, adj_z]
+
+                            # Side decoration
+                            if ED.getBlock((adj_x, adj_y, adj_z)) == Block("minecraft:air") and random.random() < 0.25:
+                                deco = random.choice(decorations)
+                                ED.placeBlock((adj_x, adj_y, adj_z), Block(deco))
+
+                            # Overhead decor
+                            if ED.getBlock((adj_x, adj_y + 1, adj_z)) == Block("minecraft:air") and random.random() < 0.15:
+                                over = random.choice(["oak_leaves", "oak_fence"])
+                                ED.placeBlock((adj_x, adj_y + 1, adj_z), Block(over))
+
+                # Occasionally place lamp post beside the path
+                if random.random() < 0.05:
+                    for dx, dz in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
+                        lx, lz = x + dx, z + dz
+                        if (lx, lz) in path_tiles:
+                            continue
+                        if 0 <= lx < final_paths.shape[0] and 0 <= lz < final_paths.shape[1]:
+                            ly = heights[lx, lz]
+                            if ED.getBlock((lx, ly, lz)) == Block("minecraft:air"):
+                                build_light_post(lx, ly, lz)
+                                break  # Only one lamp per path node
+x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1
+z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]
 
-place_logo(x,y,z)
+#place_logo(x,y,z)

@@ -6,9 +6,9 @@ import random
 
 
 SLOPE_THRESHOLD = 1  # Maximum average slope allowed
-CLAIM_SCORE = 10     # Value used to fill in claimed building spots
-BLOCKED_SCORE = 5    # Value used to mark border zones
-DOOR_SCORE = 15
+CLAIM_SCORE = 1     # Value used to fill in claimed building spots
+BLOCKED_SCORE = 0.5    # Value used to mark border zones
+DOOR_SCORE = 2
 
 
 def find_min_idx( x):
@@ -224,13 +224,14 @@ def get_placements(slope_map, building_types, heights, downhill_distance=10, dow
                 y_idxs, x_idxs = np.indices(slope_map.shape)
                 center_y, center_x = rows // 2, cols // 2
                 distance_map = np.sqrt((y_idxs - center_y) ** 2 + (x_idxs - center_x) ** 2)
-                distance_penalty = distance_map / distance_map.max() * 2.0  # Tune this factor
+                distance_penalty = distance_map / distance_map.max() * 1.1  # Tune this factor
                 slope_input += distance_penalty
 
             filterd_slope_building_map = get_avg_slope_map(slope_input, placement_map, h, w, border)
             i, j = find_min_idx(filterd_slope_building_map)
-            if filterd_slope_building_map[i, j] > SLOPE_THRESHOLD:
-                break
+            if placed != 0:
+                if filterd_slope_building_map[i, j] > SLOPE_THRESHOLD:
+                    break
 
             downhill = get_downhill_sides(heights, i, j, h, w, distance=downhill_distance)
             print(downhill)
@@ -267,7 +268,7 @@ def get_placements(slope_map, building_types, heights, downhill_distance=10, dow
             placed += 1
 
     plot_placement(placement_map, slope_map)
-    return building_spots
+    return building_spots, placement_map
 
 
 

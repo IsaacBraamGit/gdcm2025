@@ -137,7 +137,19 @@ def add_reactor_tower(wx, wz, base_y, H, R0):
         editor.placeBlock((wx + dx, ring_y, wz + dz), Block("red_stained_glass"))
     add_tornado(wx, wz, top_y + 1)  # Starts just above top copper cap
 
+def add_gold_pillars(wx, wz, top_y, radius=8, pillar_height=10, count=5):
+    """
+    Places gold block pillars in a circle around a center point (wx, wz)
+    starting from `top_y` downward.
+    """
+    for i in range(count):
+        angle = 2 * math.pi * i / count
+        dx = int(round(math.cos(angle) * radius))
+        dz = int(round(math.sin(angle) * radius))
+        px, pz = wx + dx, wz + dz
 
+        for dy in range(pillar_height):
+            editor.placeBlock((px, top_y - dy, pz), Block("gold_block"))
 
 def add_bubble_column(binary_array, build_height, radius):
 
@@ -149,11 +161,13 @@ def add_bubble_column(binary_array, build_height, radius):
     dz = avg_z - binary_array.shape[1] // 2
 
     dy = int(math.sqrt(max(0, radius ** 2 - dx ** 2 - dz ** 2)))
-    placeFromFile("builds/processed/red_skull.csv", dx - 34, dy - 145, dz - 33)
+    placeFromFile("builds/processed/red_skull.csv", dx - 34, dy + build_height , dz - 33)
     wx, wz = dx, dz
     base_y = 5
     top_y = build_height + dy
     add_reactor_tower(wx, wz, top_y + 3, H=9, R0=3)
+    #add_gold_pillars(wx, wz, top_y + 3, radius=90, pillar_height=20, count=6)
+
     # Build glass tube and water column
     for y in range(base_y, top_y + 2):
         for dx_ in [-1, 0, 1]:
@@ -165,7 +179,7 @@ def add_bubble_column(binary_array, build_height, radius):
                         editor.placeBlock((wx + dx_, y, wz + dz_), Block("sea_lantern"))
         editor.placeBlock((wx, y, wz), Block("water"))
 
-    float_y = top_y + 33
+    float_y = top_y + 36
     sign_x, sign_y, sign_z = wx, float_y + 1, wz
     editor.placeBlock((sign_x, float_y-1, sign_z), Block("sea_lantern"))
     sign = Block(
@@ -265,7 +279,7 @@ def place_logo(x,y,z):
         build_image_on_dome(
             image_path="gpt3.png",
             resize_to=(250, 250),
-            build_height=-130,
+            build_height=-50,
             radius=200,
             thickness=5,
             line_thickness=5,
