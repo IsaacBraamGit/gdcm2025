@@ -368,14 +368,15 @@ BUILDING_TYPES = [
     #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
     {'name': 'collection_with_inventory', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (15, 0, 0),
      'y_offset': -3},
-    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'quarry2', 'size': (10, 10), 'max': 5, 'border': 5, 'door_pos': (9, 0, 9), 'y_offset': 0},
+    # {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
+    # {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    # {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    # {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    # {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
+    # {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
+    # {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    # {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
 ]
 
 buildArea = ED.getBuildArea()
@@ -555,9 +556,20 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                         ):
                             build_light_post(nx, ny, nz)
 
-
+    for building in build_spots:
+        if building["name"] == "quarry2":
+            x0, z0 = building["top_left"]
+            y = heights[x0, z0]
+            ED.placeBlock((x0, y + 10, z0), Block("redstone_block"))
+            ED.placeBlock((x0, y + 9, z0), Block("redstone_block"))
+            ED.placeBlock((x0, y + 8, z0), Block("redstone_block"))
+            ED.placeBlock((x0, y + 7, z0), Block("redstone_block"))
+            ED.placeBlock((x0, y + 6, z0), Block("redstone_block"))
+            
+            print(f"Placing redstone marker at ({x0}, {y + 10}, {z0}) for quarry2")
 x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1
 z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]
+
 
 #place_logo(x,y,z)

@@ -2,7 +2,7 @@ import nbtlib
 import pandas as pd
 
 for i in range(1):
-    schem_name = f"collection"
+    schem_name = f"quarry3"
     schem_path = f"raw/{schem_name}.schem"
     nbt = nbtlib.load(schem_path)
     schem = nbt["Schematic"]
