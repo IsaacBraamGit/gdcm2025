@@ -349,7 +349,7 @@ def place_build(building):
         orientation,
         orig_width, orig_height
     )
-
+    return heights
 
 from find_buildings import *
 from get_build_map import MapHolder
@@ -387,7 +387,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
     build_spots, placement_map = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES, heights)
     for building in build_spots:
         print(building["orientation"])
-        place_build(building)
+        heights = place_build(building)
 
     from scipy.ndimage import gaussian_filter
     import numpy as np
@@ -560,4 +560,4 @@ x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1
 z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]
 
-place_logo(x,y,z)
+#place_logo(x,y,z)
