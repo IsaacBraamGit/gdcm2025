@@ -448,7 +448,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
 
     for x in range(final_paths.shape[0]):
         for z in range(final_paths.shape[1]):
-            if final_paths[x, z] == 1:
+            if final_paths[x, z] == 1 or placement_map[x,z] == 1:
                 for dx in range(-1, 2):
                     for dz in range(-1, 2):
                         nx, nz = x + dx, z + dz
@@ -457,7 +457,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                             path_heightmap[nx, nz] = heights[nx, nz]
 
     # Apply Gaussian blur
-    sigma = 3.0  # Adjust for smoothing level
+    sigma = 3  # Adjust for smoothing level
     blurred_heights = gaussian_filter(path_heightmap, sigma=sigma)
     blurred_mask = gaussian_filter(path_mask, sigma=sigma)
 
