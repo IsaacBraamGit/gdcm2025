@@ -399,6 +399,10 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
     path_blocks = ["dirt_path"]
     decorations = ["oak_leaves[persistent=true]", "oak_fence"]
 
+    with open("immutable_block_base_types.csv", newline="") as f:
+        reader = csv.reader(f)
+        next(reader)  # Skip header
+        IMMUTABLE_BLOCKS = set(row[0] for row in reader)
     final_paths = make_paths(build_map.block_slope_score, placement_map, build_map.water_mask)
 
     path_columns = set()  # All (x, z) columns used by path
@@ -425,10 +429,10 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
             (x + 1, y + 3, z, "stone_brick_stairs[facing=west,half=bottom]"),
             (x, y + 3, z - 1, "stone_brick_stairs[facing=south,half=bottom]"),
             (x, y + 3, z + 1, "stone_brick_stairs[facing=north,half=bottom]"),
-            (x - 1, y + 2, z, "lantern"),
-            (x + 1, y + 2, z, "lantern"),
-            (x, y + 2, z - 1, "lantern"),
-            (x, y + 2, z + 1, "lantern"),
+            (x - 1, y + 2, z, "lantern[hanging=true]"),
+            (x + 1, y + 2, z, "lantern[hanging=true]"),
+            (x, y + 2, z - 1, "lantern[hanging=true]"),
+            (x, y + 2, z + 1, "lantern[hanging=true]"),
         ]
         if (x, z) not in path_columns:
             for bx, by, bz, block_type in structure:
@@ -474,14 +478,21 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                             ny = heights[nx, nz] - 1
                             block = random.choice(path_blocks)
 
-                            # Clear space above the path
-                            for dy in range(1, 6):  # Clear up to 5 blocks above
-                                ED.placeBlock((nx, ny + dy, nz), Block("air"))
-                            # Set the path block
-                            ED.placeBlock((nx, ny, nz), Block(block))
+                            skip = False
+                            for dy in range(0, 6):  # Check from base (ny) to ny+5
+                                existing_block = ED.getBlock((nx, ny + dy, nz)).id.split("[")[0]
+                                if existing_block in IMMUTABLE_BLOCKS:
+                                    skip = True
+                                    break  # no need to check further
 
+                            if not skip:
+                                # Clear space above (only above, not the path block itself)
+                                for dy in range(1, 6):
+                                    ED.placeBlock((nx, ny + dy, nz), Block("air"))
 
-                            path_columns.add((nx, nz))
+                                # Place the path block
+                                ED.placeBlock((nx, ny, nz), Block(block))
+                                path_columns.add((nx, nz))
     # --- Step 1.5: Add slabs where path height difference is 1 ---
     for x, z in path_columns:
         current_y = heights[x, z]
@@ -513,6 +524,17 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                         if (nx, nz) in path_columns:
                             continue
 
+                        should_skip = False
+                        for dy in range(0, 6):  # Check from base (ny) to ny+5
+                            existing_block = ED.getBlock((nx, ny + dy, nz)).id.split("[")[0]
+                            if existing_block in IMMUTABLE_BLOCKS:
+                                should_skip = True
+                                break  # stop checking this column
+
+                        if should_skip:
+                            continue
+
+
                         ny = heights[nx, nz]
 
                         # Decoration on ground
@@ -526,13 +548,16 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                             ED.placeBlock((nx, ny + 1, nz), Block(over))
 
                         # Street lamp — sparse and spaced
-                        if random.random() < 0.03 and not too_close_to_other_posts(nx, nz):
+                        if (
+                            random.random() < 0.03
+                            and not too_close_to_other_posts(nx, nz)
+                            and placement_map[nx, nz] == 0  # ⛔ not on a building tile
+                        ):
                             build_light_post(nx, ny, nz)
-
 
 
 x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1
 z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]
 
-#place_logo(x,y,z)
+place_logo(x,y,z)
