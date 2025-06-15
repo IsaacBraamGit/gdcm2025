@@ -258,9 +258,9 @@ def build_image_on_dome(
     width, height = resize_to
     center_x = width // 2
     center_z = height // 2
-    lights = "sea_lantern"
+    lights = "redstone_lamp"
     if LITE_VERSION:
-        lights = "redstone_lamp"
+        lights = "sea_lantern"
     for x in range(width):
         for z in range(height):
             if binary_array[x, z]:

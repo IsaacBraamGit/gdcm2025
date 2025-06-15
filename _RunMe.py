@@ -39,29 +39,30 @@ candle = [
     "red_candle", "black_candle","blue_candle","green_candle","purple_candle",
 ]
 default = 0
-choice = 3#random.randint(0, 4)
+choice = random.randint(0, 4)
 
-choice_path = 2#random.randint(0, 4)
-if choice_path == 0:
+choice_path = random.randint(-2, 1)
+
+if choice_path < 0.5:
     path_blocks = ["dirt_path"]
     decorations = ["oak_leaves[persistent=true]", "oak_fence"]
     lamp_blocks = ["stone_bricks","stone_brick_wall", "stone_brick_stairs", "lantern"]
     slab = "oak_slab"
     over = "oak_leaves[persistent=true]"
 
-if choice_path == 1:
-    path_blocks = ["suspicious_sand", "sandstone"]
+if choice_path > 0.5:
+    path_blocks = ["sandstone"]
     decorations = ["cherry_leaves[persistent=true]", "pale_oak_fence"]
     lamp_blocks = ["prismarine_bricks","prismarine_wall", "prismarine_brick_stairs","soul_lantern"]
     slab = "smooth_sandstone_slab"
     over = "cherry_leaves[persistent=true]"
 
-if choice_path == 2:
-    path_blocks = ["quartz_block", "chiseled_quartz_block"]
-    decorations = ["acacia_leaves[persistent=true]", "acacia_fence"]
-    lamp_blocks = ["chiseled_resin_bricks","resin_brick_wall", "resin_brick_stairs","lantern"]
-    slab = "smooth_quartz_slab"
-    over = "acacia_leaves[persistent=true]"
+# if choice_path == 2:
+#     path_blocks = ["quartz_block", "chiseled_quartz_block"]
+#     decorations = ["acacia_leaves[persistent=true]", "acacia_fence"]
+#     lamp_blocks = ["chiseled_resin_bricks","resin_brick_wall", "resin_brick_stairs","lantern"]
+#     slab = "smooth_quartz_slab"
+#     over = "acacia_leaves[persistent=true]"
 
 
 # === Block Translator and Placement Generator ===
@@ -75,6 +76,8 @@ def change_text_prop(line):
 
     line = [cell.replace(glass[default], glass[choice]) for cell in line]
 
+    if choice_path == 1:
+        line = [cell.replace("dirt_path", "sandstone") for cell in line]
     return line
 
 
@@ -271,7 +274,7 @@ def place_build(building):
             world_x = x_offset + dx
             world_z = z_offset + dz
             # Clear above
-            for dy in range(15):
+            for dy in range(30):
                 ED.placeBlock((world_x, y_offset + 1 + dy, world_z), Block("air"))
             # Place foundation
             for down in range(0, -4, -1):
@@ -552,7 +555,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                         continue
 
                     # Clear space above
-                    for dy in (1, 2, 3, 4, 5):
+                    for dy in (1, 2, 3, 4, 5,6,7,8,9,10,11,12):
                         place_block((nx, ny + dy, nz), air_block)
 
                     # Place path block
