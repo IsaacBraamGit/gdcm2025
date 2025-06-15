@@ -1,6 +1,5 @@
 BlockType
 minecraft:andesite_stairs
-minecraft:azalea_leaves
 minecraft:barrel
 minecraft:blue_orchid
 minecraft:bookshelf
@@ -20,7 +19,6 @@ minecraft:composter
 minecraft:cracked_stone_bricks
 minecraft:crafting_table
 minecraft:dark_oak_door
-minecraft:dark_oak_leaves
 minecraft:dark_oak_slab
 minecraft:exposed_chiseled_copper
 minecraft:furnace
@@ -30,7 +28,6 @@ minecraft:hay_block
 minecraft:hopper
 minecraft:iron_bars
 minecraft:jukebox
-minecraft:jungle_leaves
 minecraft:ladder
 minecraft:lantern
 minecraft:large_fern
@@ -41,7 +38,6 @@ minecraft:mossy_cobblestone_slab
 minecraft:mossy_stone_bricks
 minecraft:note_block
 minecraft:oak_fence
-minecraft:oak_leaves
 minecraft:oak_planks
 minecraft:oak_slab
 minecraft:oak_stairs
@@ -53,7 +49,6 @@ minecraft:smoker
 minecraft:spruce_door
 minecraft:spruce_fence
 minecraft:spruce_fence_gate
-minecraft:spruce_leaves
 minecraft:spruce_log
 minecraft:spruce_planks
 minecraft:spruce_pressure_plate

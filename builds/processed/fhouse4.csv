@@ -1089,3 +1089,4 @@ Position,Block
 "(5, 23, 8)","minecraft:spruce_slab[type=bottom,waterlogged=false]"
 "(5, 23, 9)",minecraft:spruce_planks
 "(5, 23, 10)","minecraft:spruce_stairs[facing=north,half=top,shape=straight,waterlogged=false]"
+"(5, 2, 11)",*book

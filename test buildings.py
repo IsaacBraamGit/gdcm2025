@@ -8,7 +8,7 @@ from scipy.ndimage import gaussian_filter
 from collections import Counter
 from Water_sim import make_paths
 import random
-
+from test2 import place_book_on_lectern
 ED = Editor(buffering=True)
 
 
@@ -36,14 +36,38 @@ candle = [
     "red_candle", "black_candle","blue_candle","green_candle","purple_candle",
 ]
 default = 0
-choice = 4#random.randint(0, 4)
+choice = 3#random.randint(0, 4)
+
+choice_path = 2#random.randint(0, 4)
+if choice_path == 0:
+    path_blocks = ["dirt_path"]
+    decorations = ["oak_leaves[persistent=true]", "oak_fence"]
+    lamp_blocks = ["stone_bricks","stone_brick_wall", "stone_brick_stairs", "lantern"]
+    slab = "oak_slab"
+    over = "oak_leaves[persistent=true]"
+
+if choice_path == 1:
+    path_blocks = ["suspicious_sand", "sandstone"]
+    decorations = ["cherry_leaves[persistent=true]", "pale_oak_fence"]
+    lamp_blocks = ["prismarine_bricks","prismarine_wall", "prismarine_brick_stairs","soul_lantern"]
+    slab = "smooth_sandstone_slab"
+    over = "cherry_leaves[persistent=true]"
+
+if choice_path == 2:
+    path_blocks = ["quartz_block", "chiseled_quartz_block"]
+    decorations = ["acacia_leaves[persistent=true]", "acacia_fence"]
+    lamp_blocks = ["chiseled_resin_bricks","resin_brick_wall", "resin_brick_stairs","lantern"]
+    slab = "smooth_quartz_slab"
+    over = "acacia_leaves[persistent=true]"
+
 
 # === Block Translator and Placement Generator ===
 
 def change_text_prop(line):
     if "wire" not in str(line) and "ore" not in str(line) and "block" not in str(line):
         line = [cell.replace(head[default], head[choice]) for cell in line]
-    line = [cell.replace(ore[default], ore[choice]) for cell in line]
+    if "deepslate" not in str(line):
+        line = [cell.replace(ore[default], ore[choice]) for cell in line]
     line = [cell.replace(deep_ore[default], deep_ore[choice]) for cell in line]
 
     line = [cell.replace(glass[default], glass[choice]) for cell in line]
@@ -139,8 +163,17 @@ def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, he
                 x0, y0, z0 = target_pos
                 world_x, world_y, world_z = x0 + tx, y0 , z0 + tz
                 cmd = f'summon villager {world_x} {world_y} {world_z}'
-                print(f"Running command: {cmd}")
+                #print(f"Running command: {cmd}")
                 ED.runCommand(cmd)
+            elif block_str.strip().lower() == "*book":
+
+                tx, ty, tz = buildArea.offset
+                x0, y0, z0 = target_pos
+                world_x, world_y, world_z = x0 + tx, y0 , z0 + tz
+                print("here")
+                print(world_x,world_y,world_z)
+                place_book_on_lectern(ED,(x0,y0,z0), head[choice])
+
             else:
                 # === Parse and rotate block ===
                 name, props = parse_props(block_str.strip())
@@ -174,7 +207,6 @@ def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, he
 
                     if items_nbt:
                         data = f'{{Items:[{",".join(items_nbt)}]}}'
-                        print(f"Placing at {target_pos} with data: {data}")
 
                 # === Place block ===
                 ED.placeBlock(target_pos, Block(name, props, data))
@@ -185,7 +217,7 @@ from collections import Counter
 
 
 def place_build(building):
-    print(f"Placing {building['name']} in the world...")
+    #print(f"Placing {building['name']} in the world...")
 
     orig_height, orig_width = building["size"]
     orientation = building["orientation"]
@@ -391,7 +423,7 @@ build_map.find_flat_areas_and_trees(print_colors=False)
 with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
     build_spots, placement_map, crop_offset = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES, heights)
     for building in build_spots:
-        print(building["orientation"])
+        #print(building["orientation"])
         heights = place_build(building)
 
     from scipy.ndimage import gaussian_filter
@@ -401,8 +433,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
     path_tiles = set()  # Global set of all (x, z) that become path
 
     # Define path materials and decorations
-    path_blocks = ["dirt_path"]
-    decorations = ["oak_leaves[persistent=true]", "oak_fence"]
+
 
     with open("immutable_block_base_types.csv", newline="") as f:
         reader = csv.reader(f)
@@ -433,22 +464,22 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
 
     # --- Helper: Build a full street lamp post ---
     def build_light_post(x, y, z):
-        structure = [
-            (x, y, z, "stone_bricks"),
-            (x, y + 1, z, "stone_brick_wall"),
-            (x, y + 2, z, "stone_brick_wall"),
-            (x, y + 3, z, "stone_bricks"),
-            (x - 1, y + 3, z, "stone_brick_stairs[facing=east,half=bottom]"),
-            (x + 1, y + 3, z, "stone_brick_stairs[facing=west,half=bottom]"),
-            (x, y + 3, z - 1, "stone_brick_stairs[facing=south,half=bottom]"),
-            (x, y + 3, z + 1, "stone_brick_stairs[facing=north,half=bottom]"),
-            (x - 1, y + 2, z, "lantern[hanging=true]"),
-            (x + 1, y + 2, z, "lantern[hanging=true]"),
-            (x, y + 2, z - 1, "lantern[hanging=true]"),
-            (x, y + 2, z + 1, "lantern[hanging=true]"),
+        lamp = [
+            (x, y, z, lamp_blocks[0]),
+            (x, y + 1, z, lamp_blocks[1]),
+            (x, y + 2, z, lamp_blocks[1]),
+            (x, y + 3, z, lamp_blocks[0]),
+            (x - 1, y + 3, z, f"{lamp_blocks[2]}[facing=east,half=bottom]"),
+            (x + 1, y + 3, z, f"{lamp_blocks[2]}[facing=west,half=bottom]"),
+            (x, y + 3, z - 1, f"{lamp_blocks[2]}[facing=south,half=bottom]"),
+            (x, y + 3, z + 1, f"{lamp_blocks[2]}[facing=north,half=bottom]"),
+            (x - 1, y + 2, z, f"{lamp_blocks[3]}[hanging=true]"),
+            (x + 1, y + 2, z, f"{lamp_blocks[3]}[hanging=true]"),
+            (x, y + 2, z - 1, f"{lamp_blocks[3]}[hanging=true]"),
+            (x, y + 2, z + 1, f"{lamp_blocks[3]}[hanging=true]"),
         ]
         if (x, z) not in path_columns:
-            for bx, by, bz, block_type in structure:
+            for bx, by, bz, block_type in lamp:
                 ED.placeBlock((bx, by, bz), Block(block_type))
         light_post_positions.append((x, z))
 
@@ -537,10 +568,10 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
 
                 if height_diff == 1:
                     # Current is higher — place slab at neighbor (lower)
-                    ED.placeBlock((nx, neighbor_y, nz), Block("oak_slab[type=bottom]"))
+                    ED.placeBlock((nx, neighbor_y, nz), Block(f"{slab}[type=bottom]"))
                 elif height_diff == -1:
                     # Neighbor is higher — place slab at current (lower)
-                    ED.placeBlock((x, current_y, z), Block("oak_slab[type=bottom]"))
+                    ED.placeBlock((x, current_y, z), Block(f"{slab}[type=bottom]"))
 
     # --- Step 2: Decorate around the path ---
     for x in range(final_paths.shape[0]):
@@ -581,7 +612,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
 
                         # Overhead decoration
                         if ED.getBlock((nx, ny + 1, nz)) == Block("minecraft:air") and random.random() < 0.15:
-                            over = random.choice(["oak_leaves[persistent=true]"])
+                            over = random.choice([over])
                             ED.placeBlock((nx, ny + 1, nz), Block(over))
 
                         # Street lamp — sparse and spaced

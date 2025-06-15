@@ -35,6 +35,7 @@ candle = [
 default = 0
 choice = 0
 
+outer_choice = "white_concrete"
 # === Block Translator and Placement Generator ===
 
 def change_text_prop(line):
@@ -250,7 +251,7 @@ def build_image_on_dome(
     core_array = (binary_array) & (neighbor_count >= min_neighbors_for_core)
 
     # Blocks
-    outer_block = Block("white_concrete")
+    outer_block = Block(outer_choice)
     core_block = Block("redstone_block")
 
     width, height = resize_to
@@ -297,6 +298,10 @@ def place_logo(x,y,z, choice_loc):
     editor.bufferLimit = 2048
     global choice
     choice = choice_loc
+    global outer_choice
+
+    if choice == 3:
+        outer_choice = "black_concrete"
     # Replace function call accordingly
     with editor.pushTransform((buildArea.offset.x+x, y, buildArea.offset.z+z)):
         build_image_on_dome(

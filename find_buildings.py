@@ -284,7 +284,7 @@ def get_placements(slope_map, building_types, heights, downhill_distance=10, dow
                     break
 
             downhill = get_downhill_sides(heights, i, j, h, w, distance=downhill_distance)
-            print(downhill)
+
             steepest_up = np.min(downhill)
 
             if np.abs(steepest_up) > 0.1:
@@ -341,4 +341,3 @@ if __name__ == "__main__":
     slope_map = np.array(data)
 
     building_spots = get_placements(slope_map, BUILDING_TYPES)
-    print(building_spots)
