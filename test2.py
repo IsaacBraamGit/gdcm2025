@@ -66,6 +66,7 @@ It lines our lungs. It never melts…
 Once, it was said the Engine warmed us. Now, it smothers us.
 The children no longer speak. The old no longer wake.
 The streets are quiet. The temples are hollow. 
+Time itself has seemed to slow down. (Literally the AI build is affecting the MC tick speed)
 Joy has become myth. Laughter, a memory. Hope, a heresy. 
 And yet we stay.
 For the mines have no end. The wilderness is death. And he watches always. We are the Blessed Below. The enduring, the proven, the patient.
