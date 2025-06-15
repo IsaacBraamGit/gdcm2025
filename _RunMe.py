@@ -9,6 +9,9 @@ from collections import Counter
 from Water_sim import make_paths
 import random
 from test2 import place_book_on_lectern
+
+LITE_VERSION = False
+
 ED = Editor(buffering=True)
 
 
@@ -629,4 +632,4 @@ z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]
 
 
-place_logo(x,y,z, choice)
+place_logo(x,y,z, choice, LITE_VERSION)

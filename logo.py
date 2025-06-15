@@ -8,6 +8,7 @@ import csv
 import random
 
 editor = Editor(buffering=True)
+LITE_VERSION = False
 
 head = ["redstone", "coal", "lapis_lazuli", "emerald", "amethyst_shard"]
 
@@ -257,7 +258,9 @@ def build_image_on_dome(
     width, height = resize_to
     center_x = width // 2
     center_z = height // 2
-
+    lights = "sea_lantern"
+    if LITE_VERSION:
+        lights = "redstone_lamp"
     for x in range(width):
         for z in range(height):
             if binary_array[x, z]:
@@ -277,7 +280,7 @@ def build_image_on_dome(
 
                     # Choose block based on depth (t = 0 is outermost, t = thickness - 1 is deepest)
                     if core_array[x, z] and thickness >= 5 and t == thickness - 5:
-                        block_type = Block("sea_lantern")
+                        block_type = Block(lights)
                     elif core_array[x, z] and thickness >= 4 and t == thickness - 4:
                         block_type = Block("sculk_sensor")
                     elif core_array[x, z] and thickness >= 3 and t == thickness - 3:
@@ -285,22 +288,23 @@ def build_image_on_dome(
                     elif core_array[x, z] and thickness >= 2 and t == thickness - 2:
                         block_type = Block("sculk_sensor")
                     elif core_array[x, z] and thickness >= 1 and t == thickness - 1:
-                        block_type = Block("sea_lantern")
+                        block_type = Block(lights)
                     else:
                         block_type = core_block if core_array[x, z] else outer_block
 
                     geometry.placeCuboid(editor, (wx, wy, wz), (wx, wy, wz), block_type)
     add_bubble_column(binary_array, build_height, radius)
 
-def place_logo(x,y,z, choice_loc):
+def place_logo(x,y,z, choice_loc, LITE_VERSION_loc=False):
     # Run with pushTransform
     buildArea = editor.getBuildArea()
     editor.bufferLimit = 2048
     global choice
     choice = choice_loc
     global outer_choice
-
-    if choice == 3:
+    global LITE_VERSION
+    LITE_VERSION = LITE_VERSION_loc
+    if choice == 3 or choice == 4:
         outer_choice = "black_concrete"
     # Replace function call accordingly
     with editor.pushTransform((buildArea.offset.x+x, y, buildArea.offset.z+z)):
