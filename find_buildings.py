@@ -5,7 +5,7 @@ from scipy.ndimage import convolve
 import random
 
 
-SLOPE_THRESHOLD = 1  # Maximum average slope allowed
+SLOPE_THRESHOLD = 0.8  # Maximum average slope allowed
 CLAIM_SCORE = 1     # Value used to fill in claimed building spots
 BLOCKED_SCORE = 0.5    # Value used to mark border zones
 DOOR_SCORE = 2
@@ -103,7 +103,15 @@ def place_building(i, j, h, w, border, placement_map, building):
     door_pos = building["door_pos"]
     # Mark building area
     placement_map[i:i+h, j:j+w] = CLAIM_SCORE
-    placement_map[i+door_pos[0], j+door_pos[2]] = DOOR_SCORE
+
+    if building["name"] == "collection":
+        placement_map[i + 13, j + 0] = DOOR_SCORE
+        placement_map[i + 0, j + 13] = DOOR_SCORE
+        placement_map[i + 13, j + 24] = DOOR_SCORE
+        placement_map[i + 24, j + 13] = DOOR_SCORE
+    else:
+        placement_map[i+door_pos[0], j+door_pos[2]] = DOOR_SCORE
+
     # Mark border area as unavailable (BLOCKED_SCORE)
     bi_start = max(i - border, 0)
     bi_end   = min(i + h + border, rows)

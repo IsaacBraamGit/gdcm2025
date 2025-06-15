@@ -1406,3 +1406,7 @@ Position,Block,Inventory
 "(24, 3, 14)",minecraft:dirt_path,
 "(24, 5, 11)","minecraft:spruce_wall_sign[facing=east,waterlogged=false]",
 "(24, 5, 13)","minecraft:spruce_wall_sign[facing=east,waterlogged=false]",
+"(2, 5, 12)",*villager
+"(12, 5, 2)",*villager
+"(12, 5, 22)",*villager
+"(22, 5, 12)",*villager

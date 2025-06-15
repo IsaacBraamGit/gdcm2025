@@ -88,91 +88,57 @@ def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, he
             # === Parse position and rotate ===
             pos_str = row[0]
             block_str = row[1]
-            inventory = ",".join(row[2:]) if len(row) > 2 else ""  # fix for split inventory fields
-
-            x, y, z = [int(v.strip()) for v in pos_str.strip("()").split(",")]
-            x_rot, z_rot = rotate_coords(x, z, orientation, width, height)
-            target_pos = (x_rot + x_offset, y + y_offset, z_rot + z_offset)
-
-            # === Parse and rotate block ===
-            name, props = parse_props(block_str.strip())
-            props = rotate_props(name, props, orientation)
-
-            # === Force every item to Count: 64 ===
-            data = ""
-            if inventory:
-                items_nbt = []
-                for slot, item in enumerate(inventory.split(",")):
-                    item = item.strip()
-                    if not item:
-                        continue
-                    item_id = item.split("*")[0].strip() if "*" in item else item
-                    items_nbt.append(
-                        f'{{Slot:{slot}b,id:"minecraft:{item_id}",Count:64b}}'
-                    )
-                if items_nbt:
-                    data = f'{{Items:[{",".join(items_nbt)}]}}'
-                    print(f"Placing at {target_pos} with data: {data}")  # debug print
-
-            # === Place block ===
-            ED.placeBlock(target_pos, Block(name, props, data))
-    print("Done.")
-
-
-def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, height):
-    print(f"Placing blocks from {filename} with orientation {orientation}...")
-    with open(filename, newline='') as csvfile:
-        reader = csv.reader(csvfile)
-        header = next(reader)  # skip header
-        for row in reader:
-            if len(row) < 2:
-                continue  # skip invalid lines
-
-            # === Parse position and rotate ===
-            pos_str = row[0]
-            block_str = row[1]
             inventory = ",".join(row[2:]) if len(row) > 2 else ""
 
             x, y, z = [int(v.strip()) for v in pos_str.strip("()").split(",")]
             x_rot, z_rot = rotate_coords(x, z, orientation, width, height)
             target_pos = (x_rot + x_offset, y + y_offset, z_rot + z_offset)
 
-            # === Parse and rotate block ===
-            name, props = parse_props(block_str.strip())
-            props = rotate_props(name, props, orientation)
+            if block_str.strip().lower() == "*villager":
+                # === Spawn a Villager ===
+                tx, ty, tz = buildArea.offset
+                x0, y0, z0 = target_pos
+                world_x, world_y, world_z = x0 + tx, y0 , z0 + tz
+                cmd = f'summon villager {world_x} {world_y} {world_z}'
+                print(f"Running command: {cmd}")
+                ED.runCommand(cmd)
+            else:
+                # === Parse and rotate block ===
+                name, props = parse_props(block_str.strip())
+                props = rotate_props(name, props, orientation)
 
-            # === Create block entity data for up to 9 items ===
-            data = ""
-            if inventory:
-                items_nbt = []
-                for slot, item in enumerate(inventory.split(",")):
-                    if slot >= 9:
-                        break  # Limit to 9 slots
-                    item = item.strip()
-                    if not item:
-                        continue
+                # === Create block entity data for up to 9 items ===
+                data = ""
+                if inventory:
+                    items_nbt = []
+                    for slot, item in enumerate(inventory.split(",")):
+                        if slot >= 9:
+                            break  # Limit to 9 slots
+                        item = item.strip()
+                        if not item:
+                            continue
 
-                    if "*" in item:
-                        item_id, count_str = item.split("*", 1)
-                        item_id = item_id.strip()
-                        try:
-                            count = int(count_str.strip())
-                        except ValueError:
-                            count = 64
-                    else:
-                        item_id = item.strip()
-                        count = 64  # default stack size
+                        if "*" in item:
+                            item_id, count_str = item.split("*", 1)
+                            item_id = item_id.strip()
+                            try:
+                                count = int(count_str.strip())
+                            except ValueError:
+                                count = 64
+                        else:
+                            item_id = item.strip()
+                            count = 64  # default stack size
 
-                    items_nbt.append(
-                        f'{{Slot:{slot}b,id:"minecraft:{item_id}",count:{count}}}'
-                    )
+                        items_nbt.append(
+                            f'{{Slot:{slot}b,id:"minecraft:{item_id}",count:{count}}}'
+                        )
 
-                if items_nbt:
-                    data = f'{{Items:[{",".join(items_nbt)}]}}'
-                    print(f"Placing at {target_pos} with data: {data}")
+                    if items_nbt:
+                        data = f'{{Items:[{",".join(items_nbt)}]}}'
+                        print(f"Placing at {target_pos} with data: {data}")
 
-            # === Place block ===
-            ED.placeBlock(target_pos, Block(name, props, data))
+                # === Place block ===
+                ED.placeBlock(target_pos, Block(name, props, data))
     print("Done.")
 
 
@@ -366,17 +332,16 @@ from get_build_map import MapHolder
 BUILDING_TYPES = [
     #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
     #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
-    {'name': 'collection_with_inventory', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (15, 0, 0),
-     'y_offset': -3},
-    {'name': 'quarry2', 'size': (10, 10), 'max': 5, 'border': 5, 'door_pos': (9, 0, 9), 'y_offset': 0},
-    # {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
-    # {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-    # {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-    # {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-    # {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
-    # {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
-    # {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-    # {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'collection', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (13, 0, 0),'y_offset': -3},
+    {'name': 'quarry2', 'size': (10, 10), 'max': 8, 'border': 5, 'door_pos': (9, 0, 9), 'y_offset': 0},
+    {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
 ]
 
 buildArea = ED.getBuildArea()
@@ -468,32 +433,51 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
             if path_mask[x, z] > 0:
                 heights[x, z] = int(round(blurred_heights[x, z] / (blurred_mask[x, z] + 1e-6)))
 
-    # --- Step 1: Build 3x3 paths and track path columns ---
-    for x in range(final_paths.shape[0]):
-        for z in range(final_paths.shape[1]):
-            if final_paths[x, z] == 1:
-                for dx in range(-1, 2):
-                    for dz in range(-1, 2):
-                        nx, nz = x + dx, z + dz
-                        if 0 <= nx < final_paths.shape[0] and 0 <= nz < final_paths.shape[1]:
-                            ny = heights[nx, nz] - 1
-                            block = random.choice(path_blocks)
+    # Precompute constants
+    dxz_range = (-1, 0, 1)
+    air_block = Block("air")
+    path_blocks_choices = path_blocks  # assumes path_blocks is a list
+    rand_choice = random.choice
+    shape_x, shape_z = final_paths.shape
 
-                            skip = False
-                            for dy in range(0, 6):  # Check from base (ny) to ny+5
-                                existing_block = ED.getBlock((nx, ny + dy, nz)).id.split("[")[0]
-                                if existing_block in IMMUTABLE_BLOCKS:
-                                    skip = True
-                                    break  # no need to check further
+    # Local references
+    get_block = ED.getBlock
+    place_block = ED.placeBlock
+    immutable = IMMUTABLE_BLOCKS
 
-                            if not skip:
-                                # Clear space above (only above, not the path block itself)
-                                for dy in range(1, 6):
-                                    ED.placeBlock((nx, ny + dy, nz), Block("air"))
+    # --- Optimized Step 1: Build 3x3 paths and track path columns ---
+    for x in range(shape_x):
+        for z in range(shape_z):
+            if final_paths[x, z] != 1:
+                continue
 
-                                # Place the path block
-                                ED.placeBlock((nx, ny, nz), Block(block))
-                                path_columns.add((nx, nz))
+            for dx in dxz_range:
+                for dz in dxz_range:
+                    nx, nz = x + dx, z + dz
+                    if not (0 <= nx < shape_x and 0 <= nz < shape_z):
+                        continue
+
+                    ny = heights[nx, nz] - 1
+                    skip = False
+
+                    # Check for immutable blocks
+                    for dy in range(6):
+                        block_id = get_block((nx, ny + dy, nz)).id.split("[", 1)[0]
+                        if block_id in immutable:
+                            skip = True
+                            break
+
+                    if skip:
+                        continue
+
+                    # Clear space above
+                    for dy in (1, 2, 3, 4, 5):
+                        place_block((nx, ny + dy, nz), air_block)
+
+                    # Place path block
+                    place_block((nx, ny, nz), Block(rand_choice(path_blocks_choices)))
+                    path_columns.add((nx, nz))
+
     # --- Step 1.5: Add slabs where path height difference is 1 ---
     for x, z in path_columns:
         current_y = heights[x, z]
@@ -518,7 +502,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                 for dx in range(-2, 3):
                     for dz in range(-2, 3):
                         nx, nz = x + dx, z + dz
-
+                        ny = heights[nx, nz]
                         # Skip if outside bounds or inside path
                         if not (0 <= nx < final_paths.shape[0] and 0 <= nz < final_paths.shape[1]):
                             continue
@@ -556,17 +540,17 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                         ):
                             build_light_post(nx, ny, nz)
 
-    for building in build_spots:
-        if building["name"] == "quarry2":
-            x0, z0 = building["top_left"]
-            y = heights[x0, z0]
-            ED.placeBlock((x0, y + 10, z0), Block("redstone_block"))
-            ED.placeBlock((x0, y + 9, z0), Block("redstone_block"))
-            ED.placeBlock((x0, y + 8, z0), Block("redstone_block"))
-            ED.placeBlock((x0, y + 7, z0), Block("redstone_block"))
-            ED.placeBlock((x0, y + 6, z0), Block("redstone_block"))
-            
-            print(f"Placing redstone marker at ({x0}, {y + 10}, {z0}) for quarry2")
+    # for building in build_spots:
+    #     if building["name"] == "quarry2":
+    #         x0, z0 = building["top_left"]
+    #         y = heights[x0, z0]
+    #         ED.placeBlock((x0, y + 10, z0), Block("redstone_block"))
+    #         ED.placeBlock((x0, y + 9, z0), Block("redstone_block"))
+    #         ED.placeBlock((x0, y + 8, z0), Block("redstone_block"))
+    #         ED.placeBlock((x0, y + 7, z0), Block("redstone_block"))
+    #         ED.placeBlock((x0, y + 6, z0), Block("redstone_block"))
+    #
+    #         print(f"Placing redstone marker at ({x0}, {y + 10}, {z0}) for quarry2")
 x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1
 z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]
