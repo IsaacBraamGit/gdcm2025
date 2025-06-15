@@ -163,11 +163,11 @@ Position,Block
 "(3, 2, 4)",minecraft:spruce_planks
 "(8, 2, 4)",minecraft:spruce_wood[axis=y]
 "(0, 2, 5)","minecraft:spruce_trapdoor[facing=west,half=top,open=true,powered=false,waterlogged=false]"
-"(2, 2, 5)",minecraft:deepslate_redstone_ore[lit=false]
-"(3, 2, 5)",minecraft:redstone_ore[lit=false]
+"(2, 2, 5)",minecraft:deepslate_redstone_ore
+"(3, 2, 5)",minecraft:redstone_ore
 "(4, 2, 5)","minecraft:spruce_trapdoor[facing=east,half=top,open=true,powered=false,waterlogged=false]"
 "(0, 2, 6)","minecraft:spruce_trapdoor[facing=west,half=top,open=true,powered=false,waterlogged=false]"
-"(2, 2, 6)",minecraft:redstone_ore[lit=false]
+"(2, 2, 6)",minecraft:redstone_ore
 "(4, 2, 6)","minecraft:spruce_trapdoor[facing=east,half=top,open=true,powered=false,waterlogged=false]"
 "(0, 2, 7)","minecraft:spruce_trapdoor[facing=west,half=top,open=true,powered=false,waterlogged=false]"
 "(4, 2, 7)","minecraft:spruce_trapdoor[facing=east,half=top,open=true,powered=false,waterlogged=false]"
@@ -184,7 +184,7 @@ Position,Block
 "(2, 3, 4)",minecraft:spruce_planks
 "(3, 3, 4)",minecraft:spruce_planks
 "(8, 3, 4)","minecraft:andesite_wall[east=none,north=none,south=none,up=true,waterlogged=false,west=none]"
-"(8, 3, 8)",minecraft:redstone_ore[lit=false]
+"(8, 3, 8)",minecraft:redstone_ore
 "(1, 4, 3)","minecraft:quartz_slab[type=bottom,waterlogged=false]"
 "(2, 4, 3)","minecraft:quartz_slab[type=bottom,waterlogged=false]"
 "(3, 4, 3)","minecraft:quartz_slab[type=bottom,waterlogged=false]"

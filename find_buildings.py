@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.ndimage import convolve
 import random
-
+from scipy.ndimage import uniform_filter
 
 SLOPE_THRESHOLD = 0.8  # Maximum average slope allowed
 CLAIM_SCORE = 1     # Value used to fill in claimed building spots
@@ -212,12 +212,54 @@ def plot_placement(placement_map, slope_map):
 
 
 
+def find_flattest_region(slope_map, region_size=260):
+    rows, cols = slope_map.shape
+    if rows <= region_size and cols <= region_size:
+        return slope_map, (0, 0)
+
+    # Pad infs so they don't ruin the sum
+    safe_slope_map = np.nan_to_num(slope_map.copy(), nan=np.inf, posinf=np.inf, neginf=np.inf)
+
+    # Compute summed area table for efficient average calculation
+    integral = safe_slope_map.cumsum(axis=0).cumsum(axis=1)
+
+    def region_sum(i, j):
+        total = integral[i + region_size - 1, j + region_size - 1]
+        if i > 0:
+            total -= integral[i - 1, j + region_size - 1]
+        if j > 0:
+            total -= integral[i + region_size - 1, j - 1]
+        if i > 0 and j > 0:
+            total += integral[i - 1, j - 1]
+        return total
+
+    min_avg = np.inf
+    min_pos = (0, 0)
+    for i in range(rows - region_size + 1):
+        for j in range(cols - region_size + 1):
+            region = slope_map[i:i+region_size, j:j+region_size]
+            if np.isinf(region).any():
+                continue
+            avg = region_sum(i, j) / (region_size * region_size)
+            if avg < min_avg:
+                min_avg = avg
+                min_pos = (i, j)
+
+    i, j = min_pos
+    return slope_map[i:i+region_size, j:j+region_size], (i, j)
+
+
 def get_placements(slope_map, building_types, heights, downhill_distance=10, downhill_thresh=2.0):
+    slope_map, crop_offset = find_flattest_region(slope_map, region_size=260)
+    if heights is not None:
+        heights = heights[crop_offset[0]:crop_offset[0]+260, crop_offset[1]:crop_offset[1]+260]
+
     rows, cols = slope_map.shape
     placement_map = np.zeros_like(slope_map)
     building_spots = []
 
-    for building in sorted(building_types, key=lambda b: b["size"][0] * b["size"][1], reverse=True):
+
+    for building in building_types:
         max_count = building["max"]
         border = building["border"]
         placed = 0
@@ -259,7 +301,7 @@ def get_placements(slope_map, building_types, heights, downhill_distance=10, dow
             place_building(i, j, h_new, w_new, border, placement_map, new_building)
             building_spots.append({
                 "name": new_building["name"],
-                "top_left": (i, j),
+                "top_left": (i + crop_offset[0], j + crop_offset[1]),
                 "size": (h_new, w_new),
                 "border": border,
                 "building_type": new_building,
@@ -276,7 +318,7 @@ def get_placements(slope_map, building_types, heights, downhill_distance=10, dow
             placed += 1
 
     plot_placement(placement_map, slope_map)
-    return building_spots, placement_map
+    return building_spots, placement_map, crop_offset
 
 
 

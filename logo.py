@@ -9,6 +9,46 @@ import random
 
 editor = Editor(buffering=True)
 
+head = ["redstone", "coal", "lapis_lazuli", "emerald", "amethyst_shard"]
+
+ore = [
+    "redstone_ore", "coal_ore", "lapis_ore", "emerald_ore", "amethyst_cluster"
+]
+
+deep_ore = [
+    "deepslate_redstone_ore", "deepslate_coal_ore", "deepslate_lapis_ore", "deepslate_emerald_ore", "amethyst_cluster"
+]
+
+block = [
+    "redstone_block", "coal_block",
+    "lapis_block", "emerald_block", "amethyst_block"
+]
+
+glass = [
+    "red_stained_glass", "black_stained_glass",
+    "blue_stained_glass", "lime_stained_glass", "purple_stained_glass"
+]
+
+candle = [
+    "red_candle", "black_candle","blue_candle","lime_candle","purple_candle",
+]
+default = 0
+choice = 0
+
+# === Block Translator and Placement Generator ===
+
+def change_text_prop(line):
+
+    if "wire" not in str(line) and "ore" not in str(line) and "block" not in str(line):
+        line = [cell.replace(head[default], head[choice]) for cell in line]
+    line = [cell.replace(ore[default], ore[choice]) for cell in line]
+    line = [cell.replace(deep_ore[default], deep_ore[choice]) for cell in line]
+    line = [cell.replace(glass[default], glass[choice]) for cell in line]
+    line = [cell.replace(block[default], block[choice]) for cell in line]
+    line = [cell.replace(candle[default], candle[choice]) for cell in line]
+
+    return line
+
 def parse_props(block_str):
     if "[" in block_str:
         name, raw_props = block_str.split("[", 1)
@@ -28,6 +68,7 @@ def placeFromFile(filename, x_offset, y_offset, z_offset, orientation= 0, width=
         reader = csv.reader(csvfile)
         next(reader)  # skip header
         for pos_str, block_str in reader:
+            block_str = change_text_prop([block_str])[0]
             x, y, z = [int(v.strip()) for v in pos_str.strip("()").split(",")]
             x_rot, z_rot =x,z
             name, props = parse_props(block_str.strip())
@@ -52,7 +93,7 @@ def add_tornado(wx, wz, base_y, height=15):
 
             # Random block type for variety
             block_type = random.choices(
-                ["redstone_block", "red_stained_glass", "glass_pane"],
+                [block[choice], glass[choice], glass[choice]],
                 weights=[0.3, 0.4, 0.3],
                 k=1
             )[0]
@@ -60,26 +101,6 @@ def add_tornado(wx, wz, base_y, height=15):
             editor.placeBlock(block_pos, Block(block_type))
 
 
-def add_tornado(wx, wz, base_y, height=15):
-    for y in range(height):
-        layer_y = base_y + y
-        swirl_radius = max(1, int(1 + y * 0.4))  # expands upward
-        angle_offset = random.uniform(0, 2 * math.pi)
-
-        for i in range(0, 360, 30):  # control density
-            angle = math.radians(i) + angle_offset
-            dx = int(math.cos(angle) * swirl_radius)
-            dz = int(math.sin(angle) * swirl_radius)
-
-            block_pos = (wx + dx, layer_y, wz + dz)
-
-            block_type = random.choices(
-                ["redstone_block", "red_stained_glass", "red_stained_glass_pane"],
-                weights=[0.3, 0.4, 0.3],
-                k=1
-            )[0]
-
-            editor.placeBlock(block_pos, Block(block_type))
 def add_reactor_tower(wx, wz, base_y, H, R0):
     base_y -= 1  # Lower build by 1
 
@@ -97,7 +118,7 @@ def add_reactor_tower(wx, wz, base_y, H, R0):
             for dz in range(-r, r + 1):
                 dist_sq = dx**2 + dz**2
                 if r*r - 2*r <= dist_sq <= r*r:
-                    editor.placeBlock((wx + dx, base_y + y, wz + dz), Block("red_stained_glass"))
+                    editor.placeBlock((wx + dx, base_y + y, wz + dz), Block("orange_stained_glass"))
 
     # === 3. Bottom copper cap (1 layer) ===
     bottom_radius = wall_radii[0]
@@ -128,28 +149,28 @@ def add_reactor_tower(wx, wz, base_y, H, R0):
     for dx in range(-radius, radius + 1):
         for dz in range(-radius, radius + 1):
             if dx*dx + dz*dz <= radius*radius:
-                editor.placeBlock((wx + dx, top_y, wz + dz), Block("red_stained_glass"))
+                editor.placeBlock((wx + dx, top_y, wz + dz), Block("orange_stained_glass"))
 
     # --- Second: tight 5-block ring just above ---
     ring_y = top_y + 1
     offsets = [(1, 0), (-1, 0), (0, 1), (0, -1), (0, 0)]  # Plus center
     for dx, dz in offsets:
-        editor.placeBlock((wx + dx, ring_y, wz + dz), Block("red_stained_glass"))
+        editor.placeBlock((wx + dx, ring_y, wz + dz), Block("orange_stained_glass"))
     add_tornado(wx, wz, top_y + 1)  # Starts just above top copper cap
 
-def add_gold_pillars(wx, wz, top_y, radius=8, pillar_height=10, count=5):
-    """
-    Places gold block pillars in a circle around a center point (wx, wz)
-    starting from `top_y` downward.
-    """
-    for i in range(count):
-        angle = 2 * math.pi * i / count
-        dx = int(round(math.cos(angle) * radius))
-        dz = int(round(math.sin(angle) * radius))
-        px, pz = wx + dx, wz + dz
-
-        for dy in range(pillar_height):
-            editor.placeBlock((px, top_y - dy, pz), Block("gold_block"))
+# def add_gold_pillars(wx, wz, top_y, radius=8, pillar_height=10, count=5):
+#     """
+#     Places gold block pillars in a circle around a center point (wx, wz)
+#     starting from `top_y` downward.
+#     """
+#     for i in range(count):
+#         angle = 2 * math.pi * i / count
+#         dx = int(round(math.cos(angle) * radius))
+#         dz = int(round(math.sin(angle) * radius))
+#         px, pz = wx + dx, wz + dz
+#
+#         for dy in range(pillar_height):
+#             editor.placeBlock((px, top_y - dy, pz), Block("gold_block"))
 
 def add_bubble_column(binary_array, build_height, radius):
 
@@ -270,10 +291,12 @@ def build_image_on_dome(
                     geometry.placeCuboid(editor, (wx, wy, wz), (wx, wy, wz), block_type)
     add_bubble_column(binary_array, build_height, radius)
 
-def place_logo(x,y,z):
+def place_logo(x,y,z, choice_loc):
     # Run with pushTransform
     buildArea = editor.getBuildArea()
     editor.bufferLimit = 2048
+    global choice
+    choice = choice_loc
     # Replace function call accordingly
     with editor.pushTransform((buildArea.offset.x+x, y, buildArea.offset.z+z)):
         build_image_on_dome(
@@ -285,3 +308,8 @@ def place_logo(x,y,z):
             line_thickness=5,
             min_neighbors_for_core=90
         )
+
+
+if __name__ == "__main__":
+    buildArea = editor.getBuildArea()
+    place_logo(buildArea.offset.x,buildArea.offset.y,buildArea.offset.z)

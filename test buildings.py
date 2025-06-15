@@ -7,11 +7,48 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from collections import Counter
 from Water_sim import make_paths
+import random
 
 ED = Editor(buffering=True)
 
 
+head = ["redstone", "coal", "lapis_lazuli", "emerald", "amethyst_shard"]
+
+ore = [
+    "redstone_ore", "coal_ore", "lapis_ore", "emerald_ore", "amethyst_cluster"
+]
+
+deep_ore = [
+    "deepslate_redstone_ore", "deepslate_coal_ore", "deepslate_lapis_ore", "deepslate_emerald_ore", "amethyst_cluster"
+]
+
+#block = [
+#    "redstone_block", "coal_block",
+#    "lapis_block", "emerald_block", "amethyst_block"
+#]
+
+glass = [
+    "red_stained_glass", "black_stained_glass",
+    "blue_stained_glass", "green_stained_glass", "purple_stained_glass"
+]
+
+candle = [
+    "red_candle", "black_candle","blue_candle","green_candle","purple_candle",
+]
+default = 0
+choice = 4#random.randint(0, 4)
+
 # === Block Translator and Placement Generator ===
+
+def change_text_prop(line):
+    if "wire" not in str(line) and "ore" not in str(line) and "block" not in str(line):
+        line = [cell.replace(head[default], head[choice]) for cell in line]
+    line = [cell.replace(ore[default], ore[choice]) for cell in line]
+    line = [cell.replace(deep_ore[default], deep_ore[choice]) for cell in line]
+
+    line = [cell.replace(glass[default], glass[choice]) for cell in line]
+
+    return line
 
 
 def rotate_props(name, props, orientation):
@@ -85,6 +122,8 @@ def placeFromFile(filename, x_offset, y_offset, z_offset, orientation, width, he
             if len(row) < 2:
                 continue  # skip invalid lines
 
+            ##dif blocks:
+            row = change_text_prop(row)
             # === Parse position and rotate ===
             pos_str = row[0]
             block_str = row[1]
@@ -335,13 +374,13 @@ BUILDING_TYPES = [
     {'name': 'collection', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (13, 0, 0),'y_offset': -3},
     {'name': 'quarry2', 'size': (10, 10), 'max': 8, 'border': 5, 'door_pos': (9, 0, 9), 'y_offset': 0},
     {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse2', 'size': (13, 17), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse3', 'size': (13, 14), 'max': 3, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse4', 'size': (10, 18), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse5', 'size': (18, 11), 'max': 3, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse6', 'size': (22, 16), 'max': 3, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse7', 'size': (10, 10), 'max': 3, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
-    {'name': 'fhouse8', 'size': (10, 8), 'max': 3, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse2', 'size': (13, 17), 'max': 5, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse3', 'size': (13, 14), 'max': 5, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse4', 'size': (10, 18), 'max': 5, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse5', 'size': (18, 11), 'max': 5, 'border': 4, 'door_pos': (9, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse6', 'size': (22, 16), 'max': 5, 'border': 5, 'door_pos': (11, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse7', 'size': (10, 10), 'max': 5, 'border': 4, 'door_pos': (5, 0, 0), 'y_offset': 0},
+    {'name': 'fhouse8', 'size': (10, 8), 'max': 5, 'border': 3, 'door_pos': (5, 0, 0), 'y_offset': 0},
 ]
 
 buildArea = ED.getBuildArea()
@@ -350,7 +389,7 @@ heights = WORLDSLICE.heightmaps["MOTION_BLOCKING_NO_LEAVES"]
 build_map = MapHolder(ED, heights, 1.3)
 build_map.find_flat_areas_and_trees(print_colors=False)
 with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
-    build_spots, placement_map = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES, heights)
+    build_spots, placement_map, crop_offset = find_buildings.get_placements(build_map.block_slope_score, BUILDING_TYPES, heights)
     for building in build_spots:
         print(building["orientation"])
         heights = place_build(building)
@@ -369,7 +408,15 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
         reader = csv.reader(f)
         next(reader)  # Skip header
         IMMUTABLE_BLOCKS = set(row[0] for row in reader)
-    final_paths = make_paths(build_map.block_slope_score, placement_map, build_map.water_mask)
+
+    # Expand placement_map back to original map size
+    full_map = np.zeros_like(build_map.block_slope_score)
+    i0, j0 = crop_offset
+    h, w = placement_map.shape
+    full_map[i0:i0 + h, j0:j0 + w] = placement_map
+
+    # Run path generation using full-size map
+    final_paths = make_paths(build_map.block_slope_score, full_map, build_map.water_mask)
 
     path_columns = set()  # All (x, z) columns used by path
     light_post_positions = []  # List of placed light posts
@@ -406,7 +453,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
         light_post_positions.append((x, z))
 
 
-    # --- PRE-PROCESS: Smooth terrain for 3x3 path tiles using Gaussian filter ---
+   # --- PRE-PROCESS: Smooth terrain for 3x3 path tiles using Gaussian filter ---
 
     # Create mask and height map for smoothed 3x3 path area
     path_mask = np.zeros_like(final_paths, dtype=float)
@@ -414,7 +461,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
 
     for x in range(final_paths.shape[0]):
         for z in range(final_paths.shape[1]):
-            if final_paths[x, z] == 1 or placement_map[x,z] == 1:
+            if final_paths[x, z] == 1 or full_map[x,z] == 1:
                 for dx in range(-1, 2):
                     for dz in range(-1, 2):
                         nx, nz = x + dx, z + dz
@@ -502,6 +549,11 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                 for dx in range(-2, 3):
                     for dz in range(-2, 3):
                         nx, nz = x + dx, z + dz
+                        if 0 <= nx < heights.shape[0] and 0 <= nz < heights.shape[1]:
+                            ny = heights[nx, nz]
+                        else:
+                            # Handle out-of-bounds case
+                            continue
                         ny = heights[nx, nz]
                         # Skip if outside bounds or inside path
                         if not (0 <= nx < final_paths.shape[0] and 0 <= nz < final_paths.shape[1]):
@@ -536,24 +588,14 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                         if (
                             random.random() < 0.03
                             and not too_close_to_other_posts(nx, nz)
-                            and placement_map[nx, nz] == 0  # ⛔ not on a building tile
+                            and full_map[nx, nz] == 0  # ⛔ not on a building tile
                         ):
                             build_light_post(nx, ny, nz)
 
-    # for building in build_spots:
-    #     if building["name"] == "quarry2":
-    #         x0, z0 = building["top_left"]
-    #         y = heights[x0, z0]
-    #         ED.placeBlock((x0, y + 10, z0), Block("redstone_block"))
-    #         ED.placeBlock((x0, y + 9, z0), Block("redstone_block"))
-    #         ED.placeBlock((x0, y + 8, z0), Block("redstone_block"))
-    #         ED.placeBlock((x0, y + 7, z0), Block("redstone_block"))
-    #         ED.placeBlock((x0, y + 6, z0), Block("redstone_block"))
-    #
-    #         print(f"Placing redstone marker at ({x0}, {y + 10}, {z0}) for quarry2")
+
 x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1
 z = build_spots[0]["top_left"][1] + int(build_spots[0]["size"][1] / 2) + 1
 y = heights[x, z]
 
 
-#place_logo(x,y,z)
+place_logo(x,y,z, choice)
