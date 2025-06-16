@@ -18,12 +18,12 @@ This project is a solution for the [GenDesignMC Challenge](https://gendesignmc.w
     /setbuildarea ~0 ~0 ~0 ~300 ~100 ~300
 3. **Run the script:**
 
-From your terminal:
-python _RunMe.py
+    From your terminal:
+    python _RunMe.py
 
-Low-spec hardware?
+## Low-spec hardware?
 
 If you're running on a lower-end machine, edit the _RunMe.py file and set:
 LITE_VERSION = True
 
-The code is currently functional but not optimized — a full refactor is planned.
+The code is currently functional but not pretty — a full refactor is planned.
