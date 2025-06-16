@@ -80,5 +80,5 @@ Praise be to {ai_name}, who chooses."""
     editor.flushBuffer()
 
 # Usage:
-editor = Editor()
-place_book_on_lectern(editor, (10, 100, 10))
+# editor = Editor()
+# place_book_on_lectern(editor, (10, 100, 10))
