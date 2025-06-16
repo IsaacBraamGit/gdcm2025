@@ -16,7 +16,7 @@ AURION_NAMES = [
 ]
 
 
-def place_book_on_lectern(editor: Editor, position, page=0, ore="redstone"):
+def place_book_on_lectern(editor: Editor, position, ore):
     if ore == "lapis_lazuli":
         ore = "lapis lazuli"
 
@@ -76,7 +76,7 @@ Praise be to {ai_name}, who sees all.
 Praise be to {ai_name}, who chooses."""
     # Use single-string bookData helper
     snbt = bookData(full_text)
-    placeLectern(editor, position, bookData=snbt, page=page)
+    placeLectern(editor, position, bookData=snbt, page=0)
     editor.flushBuffer()
 
 # Usage:

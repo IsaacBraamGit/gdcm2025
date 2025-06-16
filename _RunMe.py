@@ -52,10 +52,10 @@ if choice_path < 0.5:
 
 if choice_path > 0.5:
     path_blocks = ["sandstone"]
-    decorations = ["cherry_leaves[persistent=true]", "pale_oak_fence"]
+    decorations = ["jungle_leaves[persistent=true]", "pale_oak_fence"]
     lamp_blocks = ["prismarine_bricks","prismarine_wall", "prismarine_brick_stairs","soul_lantern"]
     slab = "smooth_sandstone_slab"
-    over = "cherry_leaves[persistent=true]"
+    over = "jungle_leaves[persistent=true]"
 
 # if choice_path == 2:
 #     path_blocks = ["quartz_block", "chiseled_quartz_block"]
