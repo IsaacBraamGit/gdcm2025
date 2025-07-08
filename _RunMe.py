@@ -1,4 +1,6 @@
 #  /setbuildarea ~0 ~0 ~0 ~256 ~100 ~256
+from time import sleep
+
 from gdpc import Editor, Block, Transform, geometry
 from logo import place_logo
 import find_buildings
@@ -528,7 +530,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
     get_block = ED.getBlock
     place_block = ED.placeBlock
     immutable = IMMUTABLE_BLOCKS
-
+    i = 0
     # --- Optimized Step 1: Build 3x3 paths and track path columns ---
     for x in range(shape_x):
         for z in range(shape_z):
@@ -537,6 +539,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
 
             for dx in dxz_range:
                 for dz in dxz_range:
+                    i += 1
                     nx, nz = x + dx, z + dz
                     if not (0 <= nx < shape_x and 0 <= nz < shape_z):
                         continue
@@ -555,12 +558,14 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                         continue
 
                     # Clear space above
-                    for dy in (1, 2, 3, 4, 5,6,7,8,9,10,11,12):
+                    for dy in (1, 2, 3, 4, 5,6,7,8,9):#,10,11,12):
                         place_block((nx, ny + dy, nz), air_block)
 
                     # Place path block
                     place_block((nx, ny, nz), Block(rand_choice(path_blocks_choices)))
                     path_columns.add((nx, nz))
+                    if i % 100 == 0:
+                        sleep(1)
 
     # --- Step 1.5: Add slabs where path height difference is 1 ---
     for x, z in path_columns:
@@ -568,6 +573,7 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
 
         for dx, dz in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, nz = x + dx, z + dz
+            i+=1
             if (nx, nz) in path_columns:
                 neighbor_y = heights[nx, nz]
                 height_diff = current_y - neighbor_y
@@ -578,13 +584,16 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                 elif height_diff == -1:
                     # Neighbor is higher — place slab at current (lower)
                     ED.placeBlock((x, current_y, z), Block(f"{slab}[type=bottom]"))
-
+            if i % 5000 == 0:
+                sleep(1)
     # --- Step 2: Decorate around the path ---
     for x in range(final_paths.shape[0]):
         for z in range(final_paths.shape[1]):
+
             if final_paths[x, z] == 1:
                 for dx in range(-2, 3):
                     for dz in range(-2, 3):
+                        i+=1
                         nx, nz = x + dx, z + dz
                         if 0 <= nx < heights.shape[0] and 0 <= nz < heights.shape[1]:
                             ny = heights[nx, nz]
@@ -628,6 +637,8 @@ with ED.pushTransform((buildArea.offset.x, 0, buildArea.offset.z)):
                             and full_map[nx, nz] == 0  # ⛔ not on a building tile
                         ):
                             build_light_post(nx, ny, nz)
+                        if i % 200 == 0:
+                            sleep(1)
 
 
 x = build_spots[0]["top_left"][0] + int(build_spots[0]["size"][0] / 2) + 1

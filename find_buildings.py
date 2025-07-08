@@ -105,10 +105,10 @@ def place_building(i, j, h, w, border, placement_map, building):
     placement_map[i:i+h, j:j+w] = CLAIM_SCORE
 
     if building["name"] == "collection":
-        placement_map[i + 13, j + 0] = DOOR_SCORE
-        placement_map[i + 0, j + 13] = DOOR_SCORE
-        placement_map[i + 13, j + 24] = DOOR_SCORE
-        placement_map[i + 24, j + 13] = DOOR_SCORE
+        placement_map[i + 13, j + -1] = DOOR_SCORE
+        placement_map[i + -1, j + 13] = DOOR_SCORE
+        placement_map[i + 13, j + 25] = DOOR_SCORE
+        placement_map[i + 25, j + 13] = DOOR_SCORE
     else:
         placement_map[i+door_pos[0], j+door_pos[2]] = DOOR_SCORE
 
