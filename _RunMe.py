@@ -411,7 +411,7 @@ from get_build_map import MapHolder
 BUILDING_TYPES = [
     #{"name": "barn", "size": (12, 14), "max": 3, "border": 6, "door_pos": (6, 1, 0)},
     #{"name": "tent", "size": (4, 5), "max": 2, "border": 3, "door_pos": (1, 0, 0)},
-    {'name': 'collection', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (13, 0, 0),'y_offset': -3},
+    {'name': 'collection_modified', 'size': (25, 25), 'max': 1, 'border': 5, 'door_pos': (13, 0, 0),'y_offset': -3},
     {'name': 'quarry2', 'size': (10, 10), 'max': 8, 'border': 5, 'door_pos': (9, 0, 9), 'y_offset': 0},
     {'name': 'fhouse1', 'size': (30, 17), 'max': 3, 'border': 5, 'door_pos': (15, 0, 0), 'y_offset': 0},
     {'name': 'fhouse2', 'size': (13, 17), 'max': 5, 'border': 5, 'door_pos': (6, 0, 0), 'y_offset': 0},
